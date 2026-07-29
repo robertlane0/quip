@@ -1,15 +1,37 @@
-# Build artifacts
+# Build targets and binaries
 quip_host
-*.o
-*.d
+quip_tests
+*.exe
+*.out
 
-# Editor / IDE
+# Object and dependency files
+*.o
+*.obj
+*.d
+*.a
+*.so
+*.dylib
+*.dll
+
+# CMake build directories & generated files
+build/
+build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+CTestTestfile.cmake
+Makefile
+
+# Editor / IDE / Tooling
 *.swp
 *.swo
 *~
 .vscode/
 .idea/
+.clangd/
+.cache/
 
-# OS
+# OS metadata
 .DS_Store
 Thumbs.db

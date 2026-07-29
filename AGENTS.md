@@ -151,21 +151,20 @@ What **remains to be implemented** before production use:
 
 ### What works
 
-- Virtual device creation via `/dev/uinput` with full error handling.
-- Reception and parsing of QUIP v1 `0x01` (Input Batch), `0x02` (Heartbeat), and `0x04` (Key State Sync) packets over UDP/9876.
-- Digital key mask → Linux key event translation for all **64 mapped controls** (WASD, Space, Shift, Tab, Esc, E, R, C, Ctrl, Mouse L/R/M/Thumb1/2, Q, F, G, V, Z, X, B, 1-6, Alt, Caps, Gamepad Buttons A/B/X/Y/LB/RB/LT/RT/Select/Start/Home/L3/R3/DPad, Arrows, F1-F12).
-- Mouse delta + Gyroscope delta (`gyro_yaw`, `gyro_pitch`) fusion into `REL_X`/`REL_Y` relative motion injection for precise gyro-aiming.
-- Left analog stick (`left_stick_x`, `left_stick_y`) mapping to Linux virtual absolute axes (`ABS_X`, `ABS_Y`).
-- **64-packet sliding window anti-replay protection** tracking monotonically increasing sequence numbers and dropping replayed/stale packets.
-- **Key State Sync (`0x04`) handling** for discrete key state reconciliation.
-- Clean shutdown on `SIGINT`/`SIGTERM` with automatic release of all held keys and reset of analog axes.
-- Encrypted-packet rejection guard.
-- Idempotent, safe permissions setup script.
+- **Shared C++20 Core Library (`libquip`)**: Modular, cross-platform headers for protocol structs, wire endianness conversions, sliding window anti-replay validation, and crypto scaffolding.
+- **Cross-Platform Endianness Safety ([endian.hpp](file:///home/unprivileged/code/quip/include/quip/endian.hpp))**: Compile-time C++20 `std::endian` host-to-little-endian wire serialization helpers.
+- **64-Packet Anti-Replay Engine ([anti_replay.hpp](file:///home/unprivileged/code/quip/include/quip/anti_replay.hpp))**: Sliding window sequence number tracking preventing replay and injection attacks.
+- **Protocol Packet Definitions ([protocol.hpp](file:///home/unprivileged/code/quip/include/quip/protocol.hpp))**: Strongly typed packet headers and payload structs with bitfield packing and wire endian methods.
+- **Linux Virtual Device Host ([quip_linux.cpp](file:///home/unprivileged/code/quip/hosts/linux/quip_linux.cpp))**: Full `uinput` driver supporting keyboard (WASD, F-keys, etc.), relative mouse, gyro-aiming fusion, and analog joystick axes (`ABS_X`, `ABS_Y`).
+- **CMake & Make Build Systems**: Standardized `CMakeLists.txt` build configuration alongside traditional Makefile support.
+- **Automated Protocol Unit Tests ([test_protocol.cpp](file:///home/unprivileged/code/quip/tests/test_protocol.cpp))**: Unit test suite validating endianness, wire serialization, and anti-replay window logic.
+- **Idempotent Permissions Helper**: Clean `linux_perms.sh` udev rule configuration.
 
 ### What does not work / is not implemented
 
-- **Encryption & authentication** (`Noise_IK` handshake packet type `0x03` and AEAD decryption).
+- **Encryption & authentication** (`Noise_IK` handshake packet type `0x03` and AEAD decryption implementation).
 - **Dual-channel architecture** — reliable stream (TCP / BT L2CAP) and Wi-Fi<->BT failover deduplication engine.
 - **Windows Host Driver** (`quip_windows`).
 - **Android Mobile App** (`quip-android`).
+
 

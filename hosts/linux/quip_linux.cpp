@@ -15,57 +15,8 @@
 #include <netinet/in.h>
 #include <linux/uinput.h>
 
-// --- QUIP Protocol Definitions ---
-
-enum class PacketType : uint8_t {
-    InputBatch      = 0x01,
-    Heartbeat       = 0x02,
-    CryptoHandshake = 0x03,
-    KeyStateSync    = 0x04
-};
-
-namespace HeaderFlag {
-    constexpr uint8_t Encrypted  = 0x01;  // Bit 0: Payload is encrypted
-    constexpr uint8_t Compressed = 0x02;  // Bit 1: Payload is compressed
-    constexpr uint8_t AckReq     = 0x04;  // Bit 2: Sender requests acknowledgment
-}
-
-#pragma pack(push, 1)
-struct QuipHeader {
-    uint8_t    ver_flags;      // Bits 7-4: Protocol Version, Bits 3-0: Flags
-    PacketType type;           // Strongly typed packet type
-    uint16_t   sequence;       // Monotonically increasing sequence number per channel
-    uint32_t   timestamp_us;   // Client hardware clock in microseconds
-    uint32_t   nonce_prefix;   // Nonce counter for AEAD decryption validation
-
-    [[nodiscard]] constexpr uint8_t version() const noexcept {
-        return (ver_flags >> 4) & 0x0F;
-    }
-
-    [[nodiscard]] constexpr uint8_t flags() const noexcept {
-        return ver_flags & 0x0F;
-    }
-
-    [[nodiscard]] constexpr bool is_encrypted() const noexcept {
-        return (flags() & HeaderFlag::Encrypted) != 0;
-    }
-};
-
-struct QuipInputPayload {
-    uint64_t digital_mask;   // Bitfield map for up to 64 discrete controls
-    int16_t  mouse_dx;       // Relative Mouse Motion X (-32768 to +32767)
-    int16_t  mouse_dy;       // Relative Mouse Motion Y
-    int8_t   left_stick_x;   // Analog Movement X (-128 to +127)
-    int8_t   left_stick_y;   // Analog Movement Y (-128 to +127)
-    int8_t   gyro_yaw;       // Gyroscope delta yaw
-    int8_t   gyro_pitch;     // Gyroscope delta pitch
-};
-
-struct QuipPacket {
-    QuipHeader       header;
-    QuipInputPayload payload;
-};
-#pragma pack(pop)
+#include <quip/protocol.hpp>
+#include <quip/anti_replay.hpp>
 
 // 64-Bit Control Map to Linux Input Key/Button Codes
 constexpr std::array<uint16_t, 64> BIT_TO_KEY = {
@@ -133,53 +84,6 @@ constexpr std::array<uint16_t, 64> BIT_TO_KEY = {
     KEY_F6,         // Bit 61: F6
     KEY_F11,        // Bit 62: F11
     KEY_F12         // Bit 63: F12
-};
-
-// 64-Packet Sliding Window Anti-Replay Validator
-class SlidingWindowAntiReplay {
-private:
-    uint16_t max_seq = 0;
-    uint64_t window = 0;
-    bool initialized = false;
-
-public:
-    bool validate_and_update(uint16_t seq) {
-        if (!initialized) {
-            max_seq = seq;
-            window = 1ULL;
-            initialized = true;
-            return true;
-        }
-
-        int16_t diff = static_cast<int16_t>(seq - max_seq);
-
-        if (diff > 0) {
-            if (diff >= 64) {
-                window = 1ULL;
-            } else {
-                window = (window << diff) | 1ULL;
-            }
-            max_seq = seq;
-            return true;
-        } else {
-            int offset = -diff;
-            if (offset >= 64) {
-                return false; // Stale packet outside 64-packet window
-            }
-            uint64_t bit = 1ULL << offset;
-            if (window & bit) {
-                return false; // Duplicate packet replayed inside window
-            }
-            window |= bit; // Valid out-of-order packet
-            return true;
-        }
-    }
-
-    void reset() {
-        max_seq = 0;
-        window = 0;
-        initialized = false;
-    }
 };
 
 // RAII File Descriptor wrapper
@@ -313,7 +217,7 @@ public:
         return true;
     }
 
-    void ProcessInput(const QuipInputPayload& payload) {
+    void ProcessInput(const quip::QuipInputPayload& payload) {
         bool needs_sync = false;
 
         // 1. Mouse & Gyroscope Fusion (Delta Addition)
@@ -367,7 +271,7 @@ public:
         if (target_digital_mask == last_digital_mask) return;
 
         std::cout << std::format("[QUIP Host Engine] Reconciling key state sync mask: 0x{:016x}\n", target_digital_mask);
-        QuipInputPayload payload{};
+        quip::QuipInputPayload payload{};
         payload.digital_mask = target_digital_mask;
         payload.left_stick_x = last_stick_x;
         payload.left_stick_y = last_stick_y;
@@ -449,8 +353,8 @@ int main() {
 
     std::cout << "[QUIP Host Engine] Listening for inputs on UDP port 9876...\n";
 
-    SlidingWindowAntiReplay anti_replay;
-    QuipPacket packet{};
+    quip::SlidingWindowAntiReplay anti_replay;
+    quip::QuipPacket packet{};
 
     while (g_running.load(std::memory_order_relaxed)) {
         ssize_t bytes = recv(server_fd.get(), &packet, sizeof(packet), 0);
@@ -461,9 +365,12 @@ int main() {
             std::cerr << std::format("[Error] recv() failed: {}\n", strerror(errno));
             break;
         }
-        if (static_cast<size_t>(bytes) != sizeof(QuipPacket)) {
+        if (static_cast<size_t>(bytes) != sizeof(quip::QuipPacket)) {
             continue;
         }
+
+        // Apply wire endian conversion to host representation
+        packet.from_wire_endian();
 
         if (packet.header.version() != 0x01) {
             continue;
@@ -480,13 +387,13 @@ int main() {
         }
 
         switch (packet.header.type) {
-            case PacketType::InputBatch:
+            case quip::PacketType::InputBatch:
                 host.ProcessInput(packet.payload);
                 break;
-            case PacketType::Heartbeat:
+            case quip::PacketType::Heartbeat:
                 // Keep-alive heartbeat acknowledgement
                 break;
-            case PacketType::KeyStateSync:
+            case quip::PacketType::KeyStateSync:
                 host.ProcessKeyStateSync(packet.payload.digital_mask);
                 break;
             default:
@@ -497,4 +404,3 @@ int main() {
     std::cout << "[QUIP Host Engine] Shutting down...\n";
     return 0;
 }
-
