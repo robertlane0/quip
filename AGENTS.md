@@ -156,12 +156,14 @@ What **remains to be implemented** before production use:
 - **64-Packet Anti-Replay Engine ([anti_replay.hpp](file:///home/unprivileged/code/quip/include/quip/anti_replay.hpp))**: Sliding window sequence number tracking preventing replay and injection attacks.
 - **Protocol Packet Definitions ([protocol.hpp](file:///home/unprivileged/code/quip/include/quip/protocol.hpp))**: Strongly typed packet headers and payload structs with bitfield packing and wire endian methods.
 - **Linux Virtual Device Host ([quip_linux.cpp](file:///home/unprivileged/code/quip/hosts/linux/quip_linux.cpp))**: Full `uinput` driver supporting keyboard (WASD, F-keys, etc.), relative mouse, gyro-aiming fusion, and analog joystick axes (`ABS_X`, `ABS_Y`).
-- **Android Mobile App Scaffolding (`quip-android`)**: Complete Android Gradle/NDK scaffolding in `android/`:
+- **Android Mobile App (`quip-android`)**: Complete Android Gradle/NDK test application in `android/`:
   - Native C++ JNI Layer ([quip_jni.cpp](file:///home/unprivileged/code/quip/android/app/src/main/cpp/quip_jni.cpp)): Low-overhead binary packet construction, sequence number generation, and POSIX socket transmission linking `libquip`.
+  - UI Test Client ([MainActivity.kt](file:///home/unprivileged/code/quip/android/app/src/main/java/com/quip/client/MainActivity.kt) & [activity_main.xml](file:///home/unprivileged/code/quip/android/app/src/main/res/layout/activity_main.xml)): Sleek black screen layout with host IP connector and a giant touch-responsive "W" key sending real-time `BIT_W` packets on press/release to the PC host.
   - Kotlin JNI Bridge ([NativeQuipClient.kt](file:///home/unprivileged/code/quip/android/app/src/main/java/com/quip/client/NativeQuipClient.kt)) and Bitfield Protocol Maps ([QuipProtocol.kt](file:///home/unprivileged/code/quip/android/app/src/main/java/com/quip/client/QuipProtocol.kt)).
   - Input Engine ([InputEngine.kt](file:///home/unprivileged/code/quip/android/app/src/main/java/com/quip/client/InputEngine.kt)): Touch delta accumulator for sub-pixel mouse motion and Gyroscope sampling listener (`SensorEventListener`).
   - Transport Manager ([TransportManager.kt](file:///home/unprivileged/code/quip/android/app/src/main/java/com/quip/client/TransportManager.kt)): Wi-Fi UDP datagram transmission & Bluetooth L2CAP socket connection manager.
   - QR Code Parser ([PairingConfig.kt](file:///home/unprivileged/code/quip/android/app/src/main/java/com/quip/client/PairingConfig.kt)): Out-of-band `quip://` URI scheme parser for host IP, port, Bluetooth MAC, and public keys.
+
 - **CMake & Make Build Systems**: Standardized `CMakeLists.txt` build configuration alongside traditional Makefile support.
 - **Automated Protocol Unit Tests ([test_protocol.cpp](file:///home/unprivileged/code/quip/tests/test_protocol.cpp))**: Unit test suite validating endianness, wire serialization, and anti-replay window logic.
 - **Idempotent Permissions Helper**: Clean `linux_perms.sh` udev rule configuration.
