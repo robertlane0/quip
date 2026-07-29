@@ -1,0 +1,15 @@
+# Build artifacts
+quip_host
+*.o
+*.d
+
+# Editor / IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
