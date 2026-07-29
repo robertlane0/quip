@@ -152,25 +152,20 @@ What **remains to be implemented** before production use:
 ### What works
 
 - Virtual device creation via `/dev/uinput` with full error handling.
-- Reception and parsing of QUIP v1 `0x01` (Input Batch) packets over UDP/9876.
-- Digital key mask → Linux key event translation for 14 mapped controls (WASD,
-  Space, Shift, E, R, C, Ctrl, Mouse L/R).
-- Mouse delta → `REL_X`/`REL_Y` relative motion injection.
-- Clean shutdown on `SIGINT`/`SIGTERM` with automatic release of all held keys.
+- Reception and parsing of QUIP v1 `0x01` (Input Batch), `0x02` (Heartbeat), and `0x04` (Key State Sync) packets over UDP/9876.
+- Digital key mask → Linux key event translation for all **64 mapped controls** (WASD, Space, Shift, Tab, Esc, E, R, C, Ctrl, Mouse L/R/M/Thumb1/2, Q, F, G, V, Z, X, B, 1-6, Alt, Caps, Gamepad Buttons A/B/X/Y/LB/RB/LT/RT/Select/Start/Home/L3/R3/DPad, Arrows, F1-F12).
+- Mouse delta + Gyroscope delta (`gyro_yaw`, `gyro_pitch`) fusion into `REL_X`/`REL_Y` relative motion injection for precise gyro-aiming.
+- Left analog stick (`left_stick_x`, `left_stick_y`) mapping to Linux virtual absolute axes (`ABS_X`, `ABS_Y`).
+- **64-packet sliding window anti-replay protection** tracking monotonically increasing sequence numbers and dropping replayed/stale packets.
+- **Key State Sync (`0x04`) handling** for discrete key state reconciliation.
+- Clean shutdown on `SIGINT`/`SIGTERM` with automatic release of all held keys and reset of analog axes.
 - Encrypted-packet rejection guard.
 - Idempotent, safe permissions setup script.
 
 ### What does not work / is not implemented
 
-- **Encryption & authentication** (see above).
-- **Anti-replay protection** — sequence numbers are not tracked.
-- **Packet types `0x02`–`0x04`** (Heartbeat, Crypto Handshake, Key State Sync).
-- **Analog stick / gyroscope input** — `left_stick_x/y` and `gyro_yaw/pitch` are
-  parsed from the payload but not mapped to any uinput events.
-- **Dual-channel architecture** — only the unreliable UDP channel exists. The reliable
-  channel (TCP / sequenced UDP / BT L2CAP) for key-state sync is not implemented.
-- **Bluetooth transport** and Wi-Fi→BT failover.
-- **Bits 14–63 of `digital_mask`** — only bits 0–13 have key mappings. The 64-bit
-  field is tracked in full but higher bits are not acted upon.
-- **Byte-order convention** — the spec does not define a wire byte order. The current
-  implementation assumes both client and host are little-endian.
+- **Encryption & authentication** (`Noise_IK` handshake packet type `0x03` and AEAD decryption).
+- **Dual-channel architecture** — reliable stream (TCP / BT L2CAP) and Wi-Fi<->BT failover deduplication engine.
+- **Windows Host Driver** (`quip_windows`).
+- **Android Mobile App** (`quip-android`).
+
