@@ -4,6 +4,9 @@ project("quip_jni" CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 16 KB LOAD segment alignment for Android 14+ page size compatibility
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384 -Wl,-z,common-page-size=16384")
+
 get_filename_component(QUIP_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.." ABSOLUTE)
 include_directories(${QUIP_ROOT_DIR}/include)
 
