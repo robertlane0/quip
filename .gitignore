@@ -35,3 +35,6 @@ Makefile
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Android Gradle fluff and build outputs
+android/.gradle/
