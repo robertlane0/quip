@@ -17,7 +17,6 @@
 
 // --- QUIP Protocol Definitions ---
 
-// Enum class for strongly-typed protocol packet types
 enum class PacketType : uint8_t {
     InputBatch      = 0x01,
     Heartbeat       = 0x02,
@@ -25,7 +24,6 @@ enum class PacketType : uint8_t {
     KeyStateSync    = 0x04
 };
 
-// Scoped flag constants
 namespace HeaderFlag {
     constexpr uint8_t Encrypted  = 0x01;  // Bit 0: Payload is encrypted
     constexpr uint8_t Compressed = 0x02;  // Bit 1: Payload is compressed
@@ -40,7 +38,6 @@ struct QuipHeader {
     uint32_t   timestamp_us;   // Client hardware clock in microseconds
     uint32_t   nonce_prefix;   // Nonce counter for AEAD decryption validation
 
-    // Helper methods for nibble extraction and flag checking
     [[nodiscard]] constexpr uint8_t version() const noexcept {
         return (ver_flags >> 4) & 0x0F;
     }
@@ -70,7 +67,6 @@ struct QuipPacket {
 };
 #pragma pack(pop)
 
-// Modern constexpr std::array lookup map for input key codes
 constexpr std::array<uint16_t, 14> BIT_TO_KEY = {
     KEY_W,          // Bit 0: Forward
     KEY_A,          // Bit 1: Left
@@ -87,7 +83,7 @@ constexpr std::array<uint16_t, 14> BIT_TO_KEY = {
     BTN_RIGHT       // Bit 13: Mouse Right Click
 };
 
-// Lightweight C++20 RAII File Descriptor wrapper
+// RAII File Descriptor wrapper
 class UniqueFd {
     int fd_ = -1;
 
@@ -116,7 +112,6 @@ public:
     explicit operator bool() const noexcept { return valid(); }
 };
 
-// Modern lock-free std::atomic for signal safety
 static std::atomic<bool> g_running{true};
 
 static void signal_handler(int /*sig*/) {
@@ -129,13 +124,12 @@ private:
     uint64_t last_digital_mask = 0;
 
     void emit_event(uint16_t type, uint16_t code, int32_t val) {
-        // C++20 Designated Initializers
-        input_event ie{
-            .type = type,
-            .code = code,
-            .value = val
-        };
-        
+        // Zero-initialize to avoid -Wmissing-field-initializers on input_event::time
+        input_event ie{};
+        ie.type = type;
+        ie.code = code;
+        ie.value = val;
+
         ssize_t ret = write(uinput_fd.get(), &ie, sizeof(ie));
         if (ret < 0) {
             std::cerr << std::format("[Error] write to uinput failed: {}\n", strerror(errno));
@@ -156,7 +150,6 @@ public:
             return false;
         }
 
-        // Enable Event Types: Key presses & Relative mouse motion
         if (ioctl(uinput_fd.get(), UI_SET_EVBIT, EV_KEY) < 0 ||
             ioctl(uinput_fd.get(), UI_SET_EVBIT, EV_REL) < 0 ||
             ioctl(uinput_fd.get(), UI_SET_RELBIT, REL_X) < 0 ||
@@ -165,7 +158,6 @@ public:
             return false;
         }
 
-        // Register keys in kernel virtual device table
         for (uint16_t code : BIT_TO_KEY) {
             if (code != 0) {
                 if (ioctl(uinput_fd.get(), UI_SET_KEYBIT, code) < 0) {
@@ -175,17 +167,13 @@ public:
             }
         }
 
-        // C++20 Designated Initializers for nested structs
-        uinput_setup usetup{
-            .id = {
-                .bustype = BUS_USB,
-                .vendor  = 0x1234, // Custom QUIP Vendor ID
-                .product = 0x5678, // Custom QUIP Product ID
-                .version = 1
-            }
-        };
+        // Zero-initialize struct to handle all platform-specific padding cleanly
+        uinput_setup usetup{};
+        usetup.id.bustype = BUS_USB;
+        usetup.id.vendor  = 0x1234;
+        usetup.id.product = 0x5678;
+        usetup.id.version = 1;
 
-        // Modern safe string formatting into character array
         constexpr std::string_view device_name = "QUIP Virtual Controller";
         std::format_to_n(usetup.name, UINPUT_MAX_NAME_SIZE - 1, "{}", device_name);
 
@@ -205,18 +193,15 @@ public:
     void ProcessInput(const QuipInputPayload& payload) {
         bool needs_sync = false;
 
-        // 1. Mouse relative movement
         if (payload.mouse_dx != 0 || payload.mouse_dy != 0) {
             if (payload.mouse_dx != 0) emit_event(EV_REL, REL_X, payload.mouse_dx);
             if (payload.mouse_dy != 0) emit_event(EV_REL, REL_Y, payload.mouse_dy);
             needs_sync = true;
         }
 
-        // 2. Digital keys using C++20 <bit> std::countr_zero for bitmask processing
         uint64_t changed_bits = payload.digital_mask ^ last_digital_mask;
         if (changed_bits != 0) {
             while (changed_bits != 0) {
-                // Find trailing zeros to directly jump to changed bit index
                 int i = std::countr_zero(changed_bits);
                 if (i < static_cast<int>(BIT_TO_KEY.size())) {
                     uint64_t bit = (1ULL << i);
@@ -228,13 +213,11 @@ public:
                         needs_sync = true;
                     }
                 }
-                // Clear lowest set bit
                 changed_bits &= changed_bits - 1;
             }
             last_digital_mask = payload.digital_mask;
         }
 
-        // Batch commit input state changes
         if (needs_sync) {
             sync_events();
         }
@@ -246,7 +229,6 @@ public:
         bool needs_sync = false;
         uint64_t mask = last_digital_mask;
 
-        // Efficiently process set bits with std::countr_zero
         while (mask != 0) {
             int i = std::countr_zero(mask);
             if (i < static_cast<int>(BIT_TO_KEY.size())) {
@@ -273,8 +255,8 @@ public:
 };
 
 int main() {
-    // Register signal handlers using Designated Initializers
-    struct sigaction sa{.sa_handler = signal_handler};
+    struct sigaction sa{};
+    sa.sa_handler = signal_handler;
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
 
@@ -292,11 +274,10 @@ int main() {
         std::cerr << std::format("[Warning] Failed to set SO_REUSEADDR: {}\n", strerror(errno));
     }
 
-    sockaddr_in address{
-        .sin_family = AF_INET,
-        .sin_port = htons(9876),
-        .sin_addr = {.s_addr = INADDR_ANY}
-    };
+    sockaddr_in address{};
+    address.sin_family = AF_INET;
+    address.sin_port = htons(9876);
+    address.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(server_fd.get(), reinterpret_cast<struct sockaddr*>(&address), sizeof(address)) < 0) {
         std::cerr << std::format("[Error] Failed to bind to UDP port 9876: {}\n", strerror(errno));
