@@ -4,7 +4,8 @@ project("quip_jni" CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../../../include)
+get_filename_component(QUIP_ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.." ABSOLUTE)
+include_directories(${QUIP_ROOT_DIR}/include)
 
 add_library(quip_jni SHARED quip_jni.cpp)
 

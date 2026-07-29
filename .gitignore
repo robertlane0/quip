@@ -38,3 +38,6 @@ Thumbs.db
 
 # Android Gradle fluff and build outputs
 android/.gradle/
+.cxx
+**/app/.cxx/
+local.properties
