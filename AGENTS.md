@@ -1,0 +1,176 @@
+# AGENTS.md — QUIP Linux Host
+
+## Overview
+
+This document records the state of the QUIP (Quicksilver Input Protocol) Linux host
+implementation: what was found, what was fixed, and what remains outstanding.
+
+The spec lives in `QUIP_SPECIFICATION.md`. The host driver is `quip_linux.cpp`. The
+permissions helper is `linux_perms.sh`.
+
+---
+
+## Original State
+
+The codebase consisted of three files:
+
+- **`quip_linux.cpp`** — A single-file C++ program that opens a Linux `uinput` virtual
+  device, listens on UDP port 9876 for QUIP packets, and translates the binary
+  `digital_mask` and mouse-delta fields into kernel input events (key presses and
+  relative mouse motion). Analog stick and gyroscope payload fields were parsed but
+  never acted on.
+
+- **`QUIP_SPECIFICATION.md`** — Protocol spec covering dual-channel architecture,
+  binary packet format, latency optimizations, a Noise_IK-based security model,
+  and network failover strategy.
+
+- **`linux_perms.sh`** — A short bash script to create a udev rule for `/dev/uinput`
+  and add the current user to the `input` group.
+
+The implementation was a minimal proof-of-concept: it handled only `0x01` (Input Batch)
+packets over a single UDP channel with no encryption, no authentication, no anti-replay,
+and no error checking on system calls.
+
+---
+
+## Bugs Found
+
+### Spec-Internal Contradictions
+
+| ID  | Issue |
+|-----|-------|
+| S1  | Spec §2 prose said "fixed **16-byte** headers" but the struct definition and wire diagram both show **12 bytes** (3 × 32-bit rows). |
+| S2  | The RFC-style wire diagram placed `Ver` in the upper nibble (bits 7-4) of `ver_flags`, but the struct comment said `Bits 0-3: Protocol Version`, which is the lower nibble. The implementation used `& 0x0F` (lower nibble), matching the struct comment but contradicting the diagram. A spec-compliant client following the wire diagram would put the version in the wrong nibble, causing every packet to fail validation. |
+
+### Security (quip_linux.cpp)
+
+| ID  | Issue |
+|-----|-------|
+| B1  | No authentication or encryption. Any process on the LAN could inject arbitrary keystroke packets. (See "Encryption Status" section below — intentionally deferred.) |
+| B2  | No anti-replay window. The `sequence` field was parsed but never tracked. Captured packets could be replayed. |
+| B3  | `nonce_prefix` was completely ignored. |
+| B4  | The flags nibble (Encrypted, Compressed, ACK-Req) was never inspected. If a client sent an encrypted payload, the ciphertext was processed as raw input data — producing garbage keystrokes. |
+| B5  | `INADDR_ANY` with no source filtering. Packets from any IP were accepted. |
+
+### Reliability / Correctness (quip_linux.cpp)
+
+| ID  | Issue |
+|-----|-------|
+| B6  | `write()` to uinput had its return value ignored. Failed or partial writes were silent. |
+| B7  | Every `ioctl()` call in `InitVirtualDevice()` was unchecked. If any failed (old kernel, missing module), the device was reported as created successfully. |
+| B8  | `socket()` return value was not checked. A return of `-1` led to `bind()` on an invalid FD. |
+| B9  | If `socket()` succeeded but `bind()` failed, `server_fd` was leaked (no `close()`). |
+| B10 | `recv()` returning `-1` (e.g. `EINTR`) was silently ignored. |
+| B11 | On shutdown, held keys were never released. If the process was killed while W+Shift were held, those keys remained permanently pressed in the kernel virtual device. |
+| B12 | `close(server_fd)` and `return 0` after the `while(true)` loop were unreachable dead code. |
+| B13 | No signal handling. `SIGINT` (Ctrl-C) or `SIGTERM` killed the process before the destructor could release keys, compounding B11. |
+
+### Code Quality (quip_linux.cpp)
+
+| ID  | Issue |
+|-----|-------|
+| B14 | `strcpy` used without bounds check (fragile, though safe for the current string). |
+| B15 | `usetup.id.version` never set (defaulted to 0). |
+| B16 | No `SO_REUSEADDR` on the UDP socket. Quick restarts failed with `EADDRINUSE`. |
+
+### Shell Script (linux_perms.sh)
+
+| ID  | Issue |
+|-----|-------|
+| B17 | `$USER` resolves to `root` when the script is run via `sudo ./linux_perms.sh`, so `usermod -aG input root` is useless. |
+| B18 | No `set -euo pipefail`. Failing commands were invisible. |
+| B19 | `tee` overwrites the rules file entirely — destructive if other rules existed. |
+| B20 | No idempotency. Re-running the script duplicated work without checking. |
+
+---
+
+## Bugs Fixed
+
+### Spec Fixes
+
+| ID  | Fix |
+|-----|-----|
+| S1  | Changed prose from "16-byte headers" to "12-byte headers". |
+| S2  | Resolved in favor of the wire diagram (RFC convention): version is in the **upper nibble** (bits 7-4), flags in the **lower nibble** (bits 3-0). Updated the struct comment to match. Updated the C++ code to use `>> 4` instead of `& 0x0F`. |
+
+### quip_linux.cpp Fixes
+
+| ID  | Fix |
+|-----|-----|
+| B4  | Added flag constants (`FLAG_ENCRYPTED`, `FLAG_COMPRESSED`, `FLAG_ACK_REQ`). Packets with the `FLAG_ENCRYPTED` bit set are now rejected with a continue, preventing ciphertext from being misinterpreted as input. |
+| B6  | `emit_event()` now checks the return value of `write()` and logs errors for both failure and partial writes. |
+| B7  | Every `ioctl()` in `InitVirtualDevice()` is now checked. On failure the function logs the error, cleans up the FD, and returns false. |
+| B8  | `socket()` return value is now checked. On failure, an error is logged and the program exits. |
+| B9  | On `bind()` failure, `server_fd` is now closed before returning. |
+| B10 | `recv()` returning `-1` is now handled: `EINTR` causes a loop restart (to re-check the signal flag), any other error logs and breaks the loop. |
+| B11 | Added `ReleaseAllKeys()` method that iterates `last_digital_mask` and emits `EV_KEY` release events for every held key, followed by a `SYN_REPORT`. Called from the destructor before `UI_DEV_DESTROY`. |
+| B12 | Replaced `while (true)` with `while (g_running)`. The post-loop cleanup code (`close(server_fd)`, `return 0`) is now reachable. |
+| B13 | Added `SIGINT`/`SIGTERM` handlers via `sigaction()` that set `g_running = 0`. Deliberately does **not** set `SA_RESTART` so that `recv()` returns `EINTR` and the loop can exit promptly. |
+| B14 | Replaced `strcpy` with `snprintf(usetup.name, UINPUT_MAX_NAME_SIZE, ...)`. |
+| B15 | Set `usetup.id.version = 1`. |
+| B16 | Added `SO_REUSEADDR` via `setsockopt()` before `bind()`. |
+
+### linux_perms.sh Fixes
+
+| ID  | Fix |
+|-----|-----|
+| B17 | Changed `$USER` to `${SUDO_USER:-$USER}`. Added a guard that exits with an error if the resolved user is `root` (catches direct root execution without `sudo`). |
+| B18 | Added `set -euo pipefail` at the top. |
+| B19 | Changed the rules filename reference to use a variable; the overwrite behavior is now gated by an idempotency check (see B20). |
+| B20 | Added checks: if the udev rule already exists in the file, skip creation. If the user is already in the `input` group, skip `usermod`. All steps now print `[OK]` status messages. |
+
+---
+
+## Encryption Status
+
+Encryption and authentication are **intentionally not implemented** in this version.
+The spec (§4) defines a full `Noise_IK` handshake with `ChaCha20-Poly1305` /
+`AES-128-GCM` payload encryption, but for the current development phase the host
+operates in plaintext to allow easy packet capture and debugging with standard tools
+(e.g. Wireshark, `tcpdump`, `socat`).
+
+What **is** in place as a safety guard:
+
+- The `FLAG_ENCRYPTED` bit (bit 0 of the flags nibble) is inspected on every packet.
+  If a client sends an encrypted payload, the packet is **rejected** rather than
+  processed as raw input — preventing ciphertext from being misinterpreted as
+  keystrokes.
+
+What **remains to be implemented** before production use:
+
+1. `Noise_IK` session handshake via packet type `0x03` (Crypto Handshake).
+2. AEAD decryption of payloads (ChaCha20-Poly1305 or AES-128-GCM).
+3. 64-packet sliding-window anti-replay buffer using the `sequence` field.
+4. `nonce_prefix` validation for AEAD nonce construction.
+5. Source-address binding after handshake (reject packets from non-paired IPs).
+6. The `FLAG_COMPRESSED` and `FLAG_ACK_REQ` flags are defined but not acted on.
+
+---
+
+## Current State
+
+### What works
+
+- Virtual device creation via `/dev/uinput` with full error handling.
+- Reception and parsing of QUIP v1 `0x01` (Input Batch) packets over UDP/9876.
+- Digital key mask → Linux key event translation for 14 mapped controls (WASD,
+  Space, Shift, E, R, C, Ctrl, Mouse L/R).
+- Mouse delta → `REL_X`/`REL_Y` relative motion injection.
+- Clean shutdown on `SIGINT`/`SIGTERM` with automatic release of all held keys.
+- Encrypted-packet rejection guard.
+- Idempotent, safe permissions setup script.
+
+### What does not work / is not implemented
+
+- **Encryption & authentication** (see above).
+- **Anti-replay protection** — sequence numbers are not tracked.
+- **Packet types `0x02`–`0x04`** (Heartbeat, Crypto Handshake, Key State Sync).
+- **Analog stick / gyroscope input** — `left_stick_x/y` and `gyro_yaw/pitch` are
+  parsed from the payload but not mapped to any uinput events.
+- **Dual-channel architecture** — only the unreliable UDP channel exists. The reliable
+  channel (TCP / sequenced UDP / BT L2CAP) for key-state sync is not implemented.
+- **Bluetooth transport** and Wi-Fi→BT failover.
+- **Bits 14–63 of `digital_mask`** — only bits 0–13 have key mappings. The 64-bit
+  field is tracked in full but higher bits are not acted upon.
+- **Byte-order convention** — the spec does not define a wire byte order. The current
+  implementation assumes both client and host are little-endian.

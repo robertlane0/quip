@@ -33,7 +33,7 @@ Standard protocols like HTTP, WebSockets, or generic TCP carry heavy protocol ov
 
 ## 2. Binary Packet Format & Bit-Packed Frame Design
 
-To keep packet processing under **0.5 ms** on mobile ARM hardware, QUIP utilizes fixed 16-byte headers with bit-packed payloads. It completely avoids JSON/Protobuf parsing overhead in favor of raw binary serialization.
+To keep packet processing under **0.5 ms** on mobile ARM hardware, QUIP utilizes fixed 12-byte headers with bit-packed payloads. It completely avoids JSON/Protobuf parsing overhead in favor of raw binary serialization.
 
 ### The QUIP Master Packet Layout
 
@@ -59,7 +59,7 @@ To keep packet processing under **0.5 ms** on mobile ARM hardware, QUIP utilizes
 
 // Fixed Header: 12 Bytes
 typedef struct __attribute__((__packed__)) {
-    uint8_t  ver_flags;      // Bits 0-3: Protocol Version (v1=0x1), Bits 4-7: Flags (Encrypted, Compressed, ACK-Req)
+    uint8_t  ver_flags;      // Bits 7-4: Protocol Version (v1=0x1), Bits 3-0: Flags (Encrypted, Compressed, ACK-Req)
     uint8_t  type;           // 0x01: Input Batch, 0x02: Heartbeat, 0x03: Crypto Handshake, 0x04: Key State Sync
     uint16_t sequence;       // Monotonically increasing sequence number per channel
     uint32_t timestamp_us;   // Client hardware clock in microseconds (relative to session start)
