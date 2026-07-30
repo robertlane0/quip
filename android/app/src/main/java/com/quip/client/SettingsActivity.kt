@@ -6,19 +6,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Button
-import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 
 class SettingsActivity : AppCompatActivity() {
 
-    private lateinit var etHostIp: EditText
+    private lateinit var etHostIp: AutoCompleteTextView
     private lateinit var spinnerLayout: Spinner
     private lateinit var tvStatus: TextView
+    private lateinit var switchAutoConnect: SwitchCompat
+    private lateinit var switchHistory: SwitchCompat
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,6 +30,8 @@ class SettingsActivity : AppCompatActivity() {
         etHostIp = findViewById(R.id.etHostIp)
         spinnerLayout = findViewById(R.id.spinnerLayout)
         tvStatus = findViewById(R.id.tvStatus)
+        switchAutoConnect = findViewById(R.id.switchAutoConnect)
+        switchHistory = findViewById(R.id.switchHistory)
         val btnBack: View = findViewById(R.id.btnBack)
         val btnConnect: Button = findViewById(R.id.btnConnect)
         val btnDisconnect: Button = findViewById(R.id.btnDisconnect)
@@ -34,6 +39,8 @@ class SettingsActivity : AppCompatActivity() {
         etHostIp.setText(AppState.hostIp)
 
         setupLayoutSpinner()
+        refreshHistoryAdapter()
+        setupPreferenceSwitches()
         refreshStatus()
 
         btnBack.setOnClickListener { finish() }
@@ -46,6 +53,7 @@ class SettingsActivity : AppCompatActivity() {
             }
             val ok = AppState.connect(ip)
             refreshStatus()
+            refreshHistoryAdapter()
             Toast.makeText(
                 this,
                 if (ok) "Connected to $ip:9876" else "Failed to initialize client for $ip",
@@ -58,6 +66,8 @@ class SettingsActivity : AppCompatActivity() {
             refreshStatus()
         }
     }
+
+    // ---- Setup ----------------------------------------------------------------------
 
     private fun setupLayoutSpinner() {
         val adapter = object : ArrayAdapter<String>(
@@ -90,6 +100,45 @@ class SettingsActivity : AppCompatActivity() {
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+    }
+
+    private fun setupPreferenceSwitches() {
+        switchAutoConnect.setOnCheckedChangeListener(null)
+        switchAutoConnect.isChecked = AppState.autoConnectEnabled
+        switchAutoConnect.setOnCheckedChangeListener { _, isChecked ->
+            AppState.setAutoConnectEnabled(isChecked)
+        }
+
+        switchHistory.setOnCheckedChangeListener(null)
+        switchHistory.isChecked = AppState.historyEnabled
+        switchHistory.setOnCheckedChangeListener { _, isChecked ->
+            AppState.setHistoryEnabled(isChecked)
+            refreshHistoryAdapter()
+        }
+    }
+
+    /** Rebuilds the IP field's autofill suggestions from AppState.ipHistory. */
+    private fun refreshHistoryAdapter() {
+        if (!AppState.historyEnabled || AppState.ipHistory.isEmpty()) {
+            val noSuggestions: ArrayAdapter<String>? = null
+            etHostIp.setAdapter(noSuggestions)
+            return
+        }
+
+        val adapter = object : ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_dropdown_item_1line,
+            AppState.ipHistory
+        ) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent) as TextView
+                view.setTextColor(Color.WHITE)
+                view.setBackgroundColor(ContextCompat.getColor(context, R.color.quip_bg_elevated))
+                view.setPadding(28, 22, 28, 22)
+                return view
+            }
+        }
+        etHostIp.setAdapter(adapter)
     }
 
     private fun refreshStatus() {

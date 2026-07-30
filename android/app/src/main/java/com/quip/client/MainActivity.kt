@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         setupTrackpad()
+        attemptAutoConnectIfNeeded()
     }
 
     override fun onResume() {
@@ -108,6 +109,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ---- Layout / status rendering -----------------------------------------------------
+
+    /**
+     * Tries, once per process lifetime, to reconnect to the last device the user
+     * successfully connected to. No-ops if auto-connect is off, we're already
+     * connected, or nothing has ever been connected to yet.
+     */
+    private fun attemptAutoConnectIfNeeded() {
+        if (AppState.autoConnectAttempted) return
+        AppState.autoConnectAttempted = true
+
+        if (!AppState.autoConnectEnabled || AppState.isConnected) return
+        val lastIp = AppState.hostIp.takeIf { it.isNotBlank() } ?: return
+
+        val ok = AppState.connect(lastIp)
+        refreshStatus()
+        Toast.makeText(
+            this,
+            if (ok) "Auto-connected to $lastIp" else "Auto-connect to $lastIp failed",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
 
     private fun refreshLayoutIfNeeded() {
         if (renderedLayoutIndex == AppState.selectedLayoutIndex) return
