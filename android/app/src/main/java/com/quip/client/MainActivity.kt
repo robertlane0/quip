@@ -31,6 +31,9 @@ class MainActivity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("quip_prefs", Context.MODE_PRIVATE) }
     private val KEY_LAST_IP = "last_connected_ip"
 
+    // Combined digital mask of all currently pressed keys/buttons
+    private var currentDigitalMask: Long = 0L
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,54 +66,33 @@ class MainActivity : AppCompatActivity() {
         trackpad.listener = object : TrackpadView.Listener {
             override fun onMouseMove(dx: Int, dy: Int) {
                 if (isConnected) {
-                    client.sendInputPacket(
-                        digitalMask = 0L,
+                    sendPacketWithCurrentMask(
+                        digitalMask = currentDigitalMask,
                         mouseDx = dx,
                         mouseDy = dy,
                         leftStickX = 0,
                         leftStickY = 0,
                         gyroYaw = 0,
-                        gyroPitch = 0,
-                        timestampUs = System.nanoTime() / 1000
+                        gyroPitch = 0
                     )
                 }
             }
 
             override fun onLeftClick() {
                 if (isConnected) {
-                    client.sendInputPacket(
-                        digitalMask = QuipProtocol.BIT_MOUSE_L,
-                        mouseDx = 0, mouseDy = 0,
-                        leftStickX = 0, leftStickY = 0,
-                        gyroYaw = 0, gyroPitch = 0,
-                        timestampUs = System.nanoTime() / 1000
-                    )
-                    client.sendInputPacket(
-                        digitalMask = 0L,
-                        mouseDx = 0, mouseDy = 0,
-                        leftStickX = 0, leftStickY = 0,
-                        gyroYaw = 0, gyroPitch = 0,
-                        timestampUs = System.nanoTime() / 1000
-                    )
+                    currentDigitalMask = currentDigitalMask or QuipProtocol.BIT_MOUSE_L
+                    sendPacketWithCurrentMask()
+                    currentDigitalMask = currentDigitalMask and QuipProtocol.BIT_MOUSE_L.inv()
+                    sendPacketWithCurrentMask()
                 }
             }
 
             override fun onRightClick() {
                 if (isConnected) {
-                    client.sendInputPacket(
-                        digitalMask = QuipProtocol.BIT_MOUSE_R,
-                        mouseDx = 0, mouseDy = 0,
-                        leftStickX = 0, leftStickY = 0,
-                        gyroYaw = 0, gyroPitch = 0,
-                        timestampUs = System.nanoTime() / 1000
-                    )
-                    client.sendInputPacket(
-                        digitalMask = 0L,
-                        mouseDx = 0, mouseDy = 0,
-                        leftStickX = 0, leftStickY = 0,
-                        gyroYaw = 0, gyroPitch = 0,
-                        timestampUs = System.nanoTime() / 1000
-                    )
+                    currentDigitalMask = currentDigitalMask or QuipProtocol.BIT_MOUSE_R
+                    sendPacketWithCurrentMask()
+                    currentDigitalMask = currentDigitalMask and QuipProtocol.BIT_MOUSE_R.inv()
+                    sendPacketWithCurrentMask()
                 }
             }
         }
@@ -144,6 +126,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun sendPacketWithCurrentMask(
+        digitalMask: Long = currentDigitalMask,
+        mouseDx: Int = 0,
+        mouseDy: Int = 0,
+        leftStickX: Int = 0,
+        leftStickY: Int = 0,
+        gyroYaw: Int = 0,
+        gyroPitch: Int = 0
+    ) {
+        if (!isConnected) return
+        val timestampUs = System.nanoTime() / 1000
+        client.sendInputPacket(
+            digitalMask = digitalMask,
+            mouseDx = mouseDx,
+            mouseDy = mouseDy,
+            leftStickX = leftStickX,
+            leftStickY = leftStickY,
+            gyroYaw = gyroYaw,
+            gyroPitch = gyroPitch,
+            timestampUs = timestampUs
+        )
+    }
+
     private fun setupKeyButton(button: View, bit: Long) {
         val originalTint = button.backgroundTintList
 
@@ -155,29 +160,17 @@ class MainActivity : AppCompatActivity() {
                 return@setOnTouchListener false
             }
 
-            val timestampUs = System.nanoTime() / 1000
-
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     button.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#4CAF50"))
-                    client.sendInputPacket(
-                        digitalMask = bit,
-                        mouseDx = 0, mouseDy = 0,
-                        leftStickX = 0, leftStickY = 0,
-                        gyroYaw = 0, gyroPitch = 0,
-                        timestampUs = timestampUs
-                    )
+                    currentDigitalMask = currentDigitalMask or bit
+                    sendPacketWithCurrentMask()
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     button.backgroundTintList = originalTint
-                    client.sendInputPacket(
-                        digitalMask = 0L,
-                        mouseDx = 0, mouseDy = 0,
-                        leftStickX = 0, leftStickY = 0,
-                        gyroYaw = 0, gyroPitch = 0,
-                        timestampUs = timestampUs
-                    )
+                    currentDigitalMask = currentDigitalMask and bit.inv()
+                    sendPacketWithCurrentMask()
                     true
                 }
                 else -> false
@@ -187,6 +180,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        // Release all keys on app close
+        currentDigitalMask = 0L
+        sendPacketWithCurrentMask()
         client.closeClient()
     }
 }
