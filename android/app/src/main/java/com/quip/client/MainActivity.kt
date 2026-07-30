@@ -14,14 +14,15 @@ import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var keyboardPanel: KeyboardPanel
-    private lateinit var keyboardContainer: FrameLayout
-    private lateinit var trackpad: TrackpadView
+    private lateinit var contentContainer: FrameLayout
     private lateinit var statusDot: View
     private lateinit var tvStatus: TextView
 
-    // Tracks which layout is currently built into keyboardContainer so we only rebuild
-    // it when the selection actually changed (e.g. after returning from Settings).
+    private lateinit var keyboardPanel: KeyboardPanel
+    private lateinit var controlSchemeBuilder: ControlSchemeBuilder
+
+    // Tracks which scheme is currently built into contentContainer so we only rebuild it
+    // when the selection actually changed (e.g. after returning from Settings).
     private var renderedLayoutIndex: Int = -1
 
     // Drives the periodic transmission of the current key/mouse state at ~60Hz.
@@ -34,31 +35,53 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // One implementation of "what a trackpad drag/tap/double-tap does," shared by both the
+    // classic boxed TrackpadView (panel_keyboard_trackpad.xml) and the fullscreen
+    // background trackpad a control-scheme HUD builds via ControlSchemeBuilder.
+    private val trackpadOnMove: (Float, Float) -> Unit = { dx, dy ->
+        AppState.engine.addTouchDelta(dx, dy)
+    }
+    private val trackpadOnLeftClick: () -> Unit = {
+        if (!AppState.isConnected) {
+            Toast.makeText(this, "Connect to a PC host in Settings first", Toast.LENGTH_SHORT).show()
+        } else {
+            pulseMouseButton(QuipProtocol.BIT_MOUSE_L)
+        }
+    }
+    private val trackpadOnRightClick: () -> Unit = {
+        if (!AppState.isConnected) {
+            Toast.makeText(this, "Connect to a PC host in Settings first", Toast.LENGTH_SHORT).show()
+        } else {
+            pulseMouseButton(QuipProtocol.BIT_MOUSE_R)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         hideSystemBars()
 
-        keyboardContainer = findViewById(R.id.keyboardContainer)
-        trackpad = findViewById(R.id.trackpad)
+        contentContainer = findViewById(R.id.contentContainer)
         statusDot = findViewById(R.id.statusDot)
         tvStatus = findViewById(R.id.tvStatus)
         val btnSettings: View = findViewById(R.id.btnSettings)
 
         keyboardPanel = KeyboardPanel(this, AppState.engine)
+        controlSchemeBuilder = ControlSchemeBuilder(
+            this, AppState.engine, trackpadOnMove, trackpadOnLeftClick, trackpadOnRightClick
+        )
 
         btnSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        setupTrackpad()
         attemptAutoConnectIfNeeded()
     }
 
     override fun onResume() {
         super.onResume()
         hideSystemBars()
-        refreshLayoutIfNeeded()
+        renderSchemeIfNeeded()
         refreshStatus()
         sendHandler.post(sendLoop)
     }
@@ -86,29 +109,7 @@ class MainActivity : AppCompatActivity() {
             )
     }
 
-    // ---- Setup ----------------------------------------------------------------------
-
-    private fun setupTrackpad() {
-        trackpad.onMove = { dx, dy ->
-            AppState.engine.addTouchDelta(dx, dy)
-        }
-        trackpad.onLeftClick = {
-            if (!AppState.isConnected) {
-                Toast.makeText(this, "Connect to a PC host in Settings first", Toast.LENGTH_SHORT).show()
-            } else {
-                pulseMouseButton(QuipProtocol.BIT_MOUSE_L)
-            }
-        }
-        trackpad.onRightClick = {
-            if (!AppState.isConnected) {
-                Toast.makeText(this, "Connect to a PC host in Settings first", Toast.LENGTH_SHORT).show()
-            } else {
-                pulseMouseButton(QuipProtocol.BIT_MOUSE_R)
-            }
-        }
-    }
-
-    // ---- Layout / status rendering -----------------------------------------------------
+    // ---- Auto-connect -----------------------------------------------------------------
 
     /**
      * Tries, once per process lifetime, to reconnect to the last device the user
@@ -131,16 +132,47 @@ class MainActivity : AppCompatActivity() {
         ).show()
     }
 
-    private fun refreshLayoutIfNeeded() {
+    // ---- Scheme rendering ---------------------------------------------------------------
+
+    /**
+     * Builds whichever scheme is currently selected into contentContainer — a grid
+     * key-layout renders the classic Keyboard|Trackpad panel, a control-scheme renders a
+     * freeform HUD. Dispatches purely on the selected XML resource's root tag, so adding a
+     * third schema type later needs no changes here beyond one more "when" branch.
+     */
+    private fun renderSchemeIfNeeded() {
         if (renderedLayoutIndex == AppState.selectedLayoutIndex) return
         renderedLayoutIndex = AppState.selectedLayoutIndex
 
-        // Release any keys that were held from the previous layout before swapping it out.
+        // Release any keys/buttons held from the previous scheme before swapping it out.
         AppState.engine.currentDigitalMask = 0L
 
-        val layout = KeyLayoutParser.parse(this, AppState.selectedLayoutRes)
-        keyboardContainer.removeAllViews()
+        contentContainer.removeAllViews()
+        val resId = AppState.selectedLayoutRes
+
+        when (LayoutXmlUtils.peekRootTag(this, resId)) {
+            "control-scheme" -> renderControlScheme(resId)
+            else -> renderKeyGridPanel(resId)
+        }
+    }
+
+    private fun renderKeyGridPanel(resId: Int) {
+        layoutInflater.inflate(R.layout.panel_keyboard_trackpad, contentContainer, true)
+
+        val keyboardContainer: FrameLayout = contentContainer.findViewById(R.id.keyboardContainer)
+        val trackpad: TrackpadView = contentContainer.findViewById(R.id.trackpad)
+
+        val layout = KeyLayoutParser.parse(this, resId)
         keyboardContainer.addView(keyboardPanel.build(layout))
+
+        trackpad.onMove = trackpadOnMove
+        trackpad.onLeftClick = trackpadOnLeftClick
+        trackpad.onRightClick = trackpadOnRightClick
+    }
+
+    private fun renderControlScheme(resId: Int) {
+        val scheme = ControlSchemeParser.parse(this, resId)
+        contentContainer.addView(controlSchemeBuilder.build(scheme))
     }
 
     private fun refreshStatus() {

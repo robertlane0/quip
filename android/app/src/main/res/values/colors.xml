@@ -26,6 +26,10 @@
     <color name="quip_key_accent_fill_pressed">#3D5AFE</color>
     <color name="quip_key_accent_stroke">#3D5AFE</color>
 
+    <!-- Joystick -->
+    <color name="quip_joystick_track">#55585F</color>
+    <color name="quip_joystick_knob">#9A9AA2</color>
+
     <!-- Trackpad -->
     <color name="quip_trackpad_fill">#141416</color>
     <color name="quip_trackpad_stroke">#2A2A2E</color>

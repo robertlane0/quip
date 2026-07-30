@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    QUIP Control Scheme Definition
+    ===============================
+    The freeform counterpart to a key-layout grid: elements are absolutely positioned
+    (gravity + margins, like a FrameLayout child) and layered rather than placed in a
+    row/column grid. Parsed by ControlSchemeParser, rendered by ControlSchemeBuilder — a
+    new HUD is "add an XML file", same as key-layout XML files are for grid keyboards.
+
+    <control-scheme name="...">
+
+        <trackpad fullscreen="true" />
+            A mouse surface. fullscreen="true" fills the whole scheme and is added first,
+            so every other element sits on top of it in z-order. Anything not covered by a
+            joystick/button's own hit area falls through to it automatically — no manual
+            region math needed. Drag = move, tap = left click, double-tap = right click.
+
+        <joystick size="dp" gravity="v|h" marginStart/End/Top/Bottom="dp"
+                  bitUp/Down/Left/Right="BIT_CONSTANT_NAME" />
+            A virtual stick that drives up to 4 independent digital bits — diagonals
+            naturally combine two bits, the same as holding two real keys would. gravity
+            accepts any of: top, bottom, start, end, left, right, center,
+            center_horizontal, center_vertical, combined with "|".
+
+        <button label="..." bit="BIT_CONSTANT_NAME" size="dp" gravity="v|h"
+                marginStart/End/Top/Bottom="dp" />
+            A circular press-and-hold button bound to one digital bit (see QuipProtocol
+            for valid bit names, including mouse buttons like BIT_MOUSE_L).
+
+    </control-scheme>
+-->
+<control-scheme name="Joystick HUD">
+
+    <trackpad fullscreen="true" />
+
+    <joystick
+        size="200dp"
+        gravity="bottom|start"
+        marginStart="28dp"
+        marginBottom="28dp"
+        bitUp="BIT_W"
+        bitDown="BIT_S"
+        bitLeft="BIT_A"
+        bitRight="BIT_D" />
+
+    <button
+        label="Use (E key)"
+        bit="BIT_E"
+        size="100dp"
+        gravity="bottom|end"
+        marginEnd="44dp"
+        marginBottom="212dp" />
+
+    <button
+        label="Attack/Destroy (Left Click)"
+        bit="BIT_MOUSE_L"
+        size="124dp"
+        gravity="bottom|end"
+        marginEnd="220dp"
+        marginBottom="24dp" />
+
+    <button
+        label="Jump (space bar)"
+        bit="BIT_SPACE"
+        size="124dp"
+        gravity="bottom|end"
+        marginEnd="24dp"
+        marginBottom="24dp" />
+
+</control-scheme>

@@ -33,7 +33,8 @@ object AppState {
      */
     val layouts: List<Pair<String, Int>> = listOf(
         "WASD" to R.xml.keylayout_wasd,
-        "WASD + Mods" to R.xml.keylayout_wasd_full
+        "WASD + Mods" to R.xml.keylayout_wasd_full,
+        "Joystick HUD" to R.xml.controlscheme_joystick_hud
     )
 
     val engine = InputEngine()

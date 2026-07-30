@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The classic "Keyboard | Trackpad" split panel, used for grid-based key-layout XML
+     files. Inflated into MainActivity's contentContainer on demand; control-scheme XML
+     files (joystick/buttons/background trackpad) get a programmatically-built HUD instead
+     — see ControlSchemeBuilder. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+
+    <!-- Keyboard Panel -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="KEYBOARD"
+            android:textColor="@color/quip_text_hint"
+            android:textSize="10sp"
+            android:letterSpacing="0.15"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:paddingBottom="2dp" />
+
+        <FrameLayout
+            android:id="@+id/keyboardContainer"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:paddingStart="0dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="0dp" />
+
+    </LinearLayout>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="1dp"
+        android:layout_height="match_parent"
+        android:background="@color/quip_divider" />
+
+    <!-- Trackpad Panel -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="TRACKPAD"
+            android:textColor="@color/quip_text_hint"
+            android:textSize="10sp"
+            android:letterSpacing="0.15"
+            android:gravity="center"
+            android:paddingTop="4dp"
+            android:paddingBottom="2dp" />
+
+        <com.quip.client.TrackpadView
+            android:id="@+id/trackpad"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="0dp"
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="0dp"
+            android:background="@drawable/bg_trackpad" />
+
+    </LinearLayout>
+
+</LinearLayout>
