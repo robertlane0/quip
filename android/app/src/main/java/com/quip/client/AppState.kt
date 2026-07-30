@@ -20,6 +20,7 @@ object AppState {
     private const val KEY_HISTORY_ENABLED = "history_enabled"
     private const val KEY_LAST_IP = "last_connected_ip"
     private const val KEY_IP_HISTORY = "ip_history"
+    private const val KEY_SELECTED_LAYOUT = "selected_layout_index"
     private const val HISTORY_SEPARATOR = ","
     private const val MAX_HISTORY = 3
 
@@ -39,6 +40,7 @@ object AppState {
     val transport = TransportManager(NativeQuipClient())
 
     var selectedLayoutIndex: Int = 0
+        private set
 
     var isConnected: Boolean = false
         private set
@@ -72,6 +74,7 @@ object AppState {
         historyEnabled = p.getBoolean(KEY_HISTORY_ENABLED, true)
         hostIp = p.getString(KEY_LAST_IP, "") ?: ""
         ipHistory = parseHistory(p.getString(KEY_IP_HISTORY, null))
+        selectedLayoutIndex = p.getInt(KEY_SELECTED_LAYOUT, 0).coerceIn(0, layouts.lastIndex)
     }
 
     fun connect(ip: String, port: Int = 9876): Boolean {
@@ -93,6 +96,12 @@ object AppState {
     fun setAutoConnectEnabled(enabled: Boolean) {
         autoConnectEnabled = enabled
         prefs?.edit()?.putBoolean(KEY_AUTOCONNECT, enabled)?.apply()
+    }
+
+    fun setSelectedLayoutIndex(index: Int) {
+        if (index !in layouts.indices || index == selectedLayoutIndex) return
+        selectedLayoutIndex = index
+        prefs?.edit()?.putInt(KEY_SELECTED_LAYOUT, index)?.apply()
     }
 
     /**
