@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A second, denser layout — proves the grid/bit system generalizes beyond WASD. -->
+<key-layout
+    name="WASD + Mods"
+    rows="4"
+    columns="3">
+
+    <key label="W" bit="BIT_W" row="0" col="1" />
+    <key label="A" bit="BIT_A" row="1" col="0" />
+    <key label="S" bit="BIT_S" row="1" col="1" />
+    <key label="D" bit="BIT_D" row="1" col="2" />
+
+    <key label="Shift" bit="BIT_SHIFT" row="2" col="0" accent="true" />
+    <key label="Ctrl" bit="BIT_CTRL" row="2" col="2" accent="true" />
+
+    <key label="Space" bit="BIT_SPACE" row="3" col="0" colSpan="3" accent="true" />
+
+</key-layout>

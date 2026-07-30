@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base surfaces -->
+    <color name="quip_bg">#0B0B0D</color>
+    <color name="quip_bg_elevated">#141416</color>
+    <color name="quip_bg_bar">#19191C</color>
+    <color name="quip_divider">#2A2A2E</color>
+
+    <!-- Text -->
+    <color name="quip_text_primary">#F2F2F2</color>
+    <color name="quip_text_secondary">#8A8A90</color>
+    <color name="quip_text_hint">#6E6E73</color>
+
+    <!-- Accent -->
+    <color name="quip_accent">#3D5AFE</color>
+    <color name="quip_accent_dim">#1A2242</color>
+    <color name="quip_status_ok">#4CD964</color>
+    <color name="quip_status_bad">#FF5252</color>
+    <color name="quip_status_warn">#FFC107</color>
+
+    <!-- Key button states -->
+    <color name="quip_key_fill">#1C1C1E</color>
+    <color name="quip_key_fill_pressed">#2C2C2E</color>
+    <color name="quip_key_stroke">#3A3A3E</color>
+    <color name="quip_key_accent_fill">#1A2242</color>
+    <color name="quip_key_accent_fill_pressed">#3D5AFE</color>
+    <color name="quip_key_accent_stroke">#3D5AFE</color>
+
+    <!-- Trackpad -->
+    <color name="quip_trackpad_fill">#141416</color>
+    <color name="quip_trackpad_stroke">#2A2A2E</color>
+    <color name="quip_trackpad_flash">#232326</color>
+</resources>

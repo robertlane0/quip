@@ -3,15 +3,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#000000">
+    android:background="@color/quip_bg">
 
     <!-- Top Connection Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="12dp"
-        android:background="#121212">
+        android:gravity="center_vertical"
+        android:padding="10dp"
+        android:background="@color/quip_bg_elevated">
 
         <EditText
             android:id="@+id/etHostIp"
@@ -19,12 +20,24 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:hint="Host IP (e.g. 192.168.1.100)"
-            android:textColorHint="#888888"
-            android:textColor="#FFFFFF"
+            android:textColorHint="@color/quip_text_secondary"
+            android:textColor="@color/quip_text_primary"
             android:inputType="textUri"
-            android:textSize="16sp"
-            android:background="#1E1E1E"
-            android:padding="10dp" />
+            android:singleLine="true"
+            android:textSize="15sp"
+            android:background="@color/quip_bg"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="9dp"
+            android:paddingBottom="9dp" />
+
+        <Spinner
+            android:id="@+id/spinnerLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:minWidth="130dp"
+            android:background="@color/quip_bg" />
 
         <Button
             android:id="@+id/btnConnect"
@@ -32,8 +45,11 @@
             android:layout_height="wrap_content"
             android:text="Connect"
             android:textColor="#FFFFFF"
-            android:backgroundTint="#2196F3"
-            android:layout_marginStart="8dp" />
+            android:backgroundTint="@color/quip_accent"
+            android:layout_marginStart="8dp"
+            android:paddingStart="18dp"
+            android:paddingEnd="18dp"
+            android:minHeight="0dp" />
     </LinearLayout>
 
     <!-- Status Text -->
@@ -42,32 +58,78 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Status: Disconnected"
-        android:textColor="#FFC107"
+        android:textColor="@color/quip_status_warn"
         android:gravity="center"
         android:padding="6dp"
-        android:textSize="14sp"
-        android:background="#1A1A1A" />
+        android:textSize="13sp"
+        android:background="@color/quip_bg_bar" />
 
-    <!-- Main Giant W Button Container -->
-    <FrameLayout
+    <!-- Keyboard | Trackpad -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="#000000">
+        android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/btnW"
-            android:layout_width="240dp"
-            android:layout_height="240dp"
-            android:layout_gravity="center"
-            android:text="W"
-            android:textColor="#FFFFFF"
-            android:textSize="110sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:background="#222222"
-            android:clickable="true"
-            android:focusable="true" />
-    </FrameLayout>
+        <!-- Keyboard Panel -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="KEYBOARD"
+                android:textColor="@color/quip_text_hint"
+                android:textSize="12sp"
+                android:letterSpacing="0.15"
+                android:gravity="center"
+                android:padding="10dp" />
+
+            <FrameLayout
+                android:id="@+id/keyboardContainer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:padding="20dp" />
+
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/quip_divider" />
+
+        <!-- Trackpad Panel -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TRACKPAD"
+                android:textColor="@color/quip_text_hint"
+                android:textSize="12sp"
+                android:letterSpacing="0.15"
+                android:gravity="center"
+                android:padding="10dp" />
+
+            <com.quip.client.TrackpadView
+                android:id="@+id/trackpad"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_margin="20dp"
+                android:background="@drawable/bg_trackpad" />
+
+        </LinearLayout>
+
+    </LinearLayout>
 
 </LinearLayout>

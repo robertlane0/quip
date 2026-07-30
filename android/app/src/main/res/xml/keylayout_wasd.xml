@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    QUIP Key Layout Definition
+    ===========================
+    Declares a virtual keyboard cluster as a grid of buttons, each bound to a
+    QuipProtocol digital-mask bit (see QuipProtocol.kt for valid "bit" names).
+    Parsed at runtime by KeyLayoutParser and rendered by KeyboardPanel — no
+    Kotlin changes are needed to add a new control scheme, just a new file
+    here plus one line registering it in MainActivity.LAYOUTS.
+
+    <key-layout name="..." rows="R" columns="C">
+        <key label="Display text"
+             bit="BIT_CONSTANT_NAME"
+             row="r" col="c"
+             [rowSpan="1"] [colSpan="1"]
+             [accent="false"] />
+    </key-layout>
+-->
+<key-layout
+    name="WASD"
+    rows="2"
+    columns="3">
+
+    <key label="W" bit="BIT_W" row="0" col="1" />
+    <key label="A" bit="BIT_A" row="1" col="0" />
+    <key label="S" bit="BIT_S" row="1" col="1" />
+    <key label="D" bit="BIT_D" row="1" col="2" />
+
+</key-layout>

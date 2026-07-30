@@ -35,4 +35,48 @@ object QuipProtocol {
     const val BIT_GAMEPAD_START: Long = 1L shl 41
     const val BIT_GAMEPAD_L3: Long    = 1L shl 43
     const val BIT_GAMEPAD_R3: Long    = 1L shl 44
+
+    /**
+     * Name -> bit lookup so that key layouts declared in XML (res/xml/keylayout_*.xml)
+     * can reference a bit by its constant name (e.g. bit="BIT_W") instead of hardcoding
+     * a numeric value. Add new bit constants above and they become available to XML
+     * layouts automatically.
+     */
+    private val byName: Map<String, Long> = mapOf(
+        "BIT_W" to BIT_W,
+        "BIT_A" to BIT_A,
+        "BIT_S" to BIT_S,
+        "BIT_D" to BIT_D,
+        "BIT_SPACE" to BIT_SPACE,
+        "BIT_SHIFT" to BIT_SHIFT,
+        "BIT_TAB" to BIT_TAB,
+        "BIT_ESC" to BIT_ESC,
+        "BIT_E" to BIT_E,
+        "BIT_R" to BIT_R,
+        "BIT_C" to BIT_C,
+        "BIT_CTRL" to BIT_CTRL,
+        "BIT_MOUSE_L" to BIT_MOUSE_L,
+        "BIT_MOUSE_R" to BIT_MOUSE_R,
+        "BIT_MOUSE_M" to BIT_MOUSE_M,
+        "BIT_MOUSE_THUMB1" to BIT_MOUSE_THUMB1,
+        "BIT_MOUSE_THUMB2" to BIT_MOUSE_THUMB2,
+        "BIT_GAMEPAD_A" to BIT_GAMEPAD_A,
+        "BIT_GAMEPAD_B" to BIT_GAMEPAD_B,
+        "BIT_GAMEPAD_X" to BIT_GAMEPAD_X,
+        "BIT_GAMEPAD_Y" to BIT_GAMEPAD_Y,
+        "BIT_GAMEPAD_LB" to BIT_GAMEPAD_LB,
+        "BIT_GAMEPAD_RB" to BIT_GAMEPAD_RB,
+        "BIT_GAMEPAD_LT" to BIT_GAMEPAD_LT,
+        "BIT_GAMEPAD_RT" to BIT_GAMEPAD_RT,
+        "BIT_GAMEPAD_SELECT" to BIT_GAMEPAD_SELECT,
+        "BIT_GAMEPAD_START" to BIT_GAMEPAD_START,
+        "BIT_GAMEPAD_L3" to BIT_GAMEPAD_L3,
+        "BIT_GAMEPAD_R3" to BIT_GAMEPAD_R3
+    )
+
+    /** Resolves a bit constant by its XML-declared name, e.g. "BIT_W". */
+    fun bitByName(name: String): Long =
+        byName[name] ?: throw IllegalArgumentException(
+            "Unknown QuipProtocol bit \"$name\" referenced from a key-layout XML file"
+        )
 }
