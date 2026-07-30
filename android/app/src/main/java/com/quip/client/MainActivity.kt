@@ -132,8 +132,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupKeyButton(button: View, bit: Long) {
-        val originalBackground = button.background
-        val greenBackground = android.graphics.drawable.ColorDrawable(Color.parseColor("#4CAF50"))
+        val originalTint = button.backgroundTintList
 
         button.setOnTouchListener { _, event ->
             if (!isConnected) {
@@ -147,7 +146,7 @@ class MainActivity : AppCompatActivity() {
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    button.setBackground(greenBackground)
+                    button.backgroundTintList = android.content.res.ColorStateList.valueOf(Color.parseColor("#4CAF50"))
                     client.sendInputPacket(
                         digitalMask = bit,
                         mouseDx = 0,
@@ -161,7 +160,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    button.setBackground(originalBackground)
+                    button.backgroundTintList = originalTint
                     client.sendInputPacket(
                         digitalMask = 0L,
                         mouseDx = 0,
