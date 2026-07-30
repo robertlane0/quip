@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:alignmentMode="alignMargins"
-    android:columnCount="3"
-    android:rowCount="2"
-    android:padding="20dp"
-    android:useDefaultMargins="true">
+    android:padding="20dp">
 
     <!-- W -->
     <com.google.android.material.button.MaterialButton
@@ -14,15 +12,16 @@
         style="@style/Widget.Material3.Button"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_column="1"
-        android:layout_row="0"
-        android:layout_columnWeight="1"
-        android:layout_rowWeight="1"
+        android:layout_margin="4dp"
         android:tag="KEY_W"
         android:text="W"
         android:textSize="28sp"
         android:insetTop="0dp"
-        android:insetBottom="0dp" />
+        android:insetBottom="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/keyS"
+        app:layout_constraintStart_toStartOf="@id/keyS"
+        app:layout_constraintEnd_toEndOf="@id/keyS" />
 
     <!-- A -->
     <com.google.android.material.button.MaterialButton
@@ -30,15 +29,16 @@
         style="@style/Widget.Material3.Button"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_column="0"
-        android:layout_row="1"
-        android:layout_columnWeight="1"
-        android:layout_rowWeight="1"
+        android:layout_margin="4dp"
         android:tag="KEY_A"
         android:text="A"
         android:textSize="28sp"
         android:insetTop="0dp"
-        android:insetBottom="0dp" />
+        android:insetBottom="0dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/keyS"
+        app:layout_constraintTop_toTopOf="@id/keyS"
+        app:layout_constraintBottom_toBottomOf="@id/keyS" />
 
     <!-- S -->
     <com.google.android.material.button.MaterialButton
@@ -46,15 +46,16 @@
         style="@style/Widget.Material3.Button"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_column="1"
-        android:layout_row="1"
-        android:layout_columnWeight="1"
-        android:layout_rowWeight="1"
+        android:layout_margin="4dp"
         android:tag="KEY_S"
         android:text="S"
         android:textSize="28sp"
         android:insetTop="0dp"
-        android:insetBottom="0dp" />
+        android:insetBottom="0dp"
+        app:layout_constraintTop_toBottomOf="@id/keyW"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/keyA"
+        app:layout_constraintEnd_toStartOf="@id/keyD" />
 
     <!-- D -->
     <com.google.android.material.button.MaterialButton
@@ -62,14 +63,15 @@
         style="@style/Widget.Material3.Button"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_column="2"
-        android:layout_row="1"
-        android:layout_columnWeight="1"
-        android:layout_rowWeight="1"
+        android:layout_margin="4dp"
         android:tag="KEY_D"
         android:text="D"
         android:textSize="28sp"
         android:insetTop="0dp"
-        android:insetBottom="0dp" />
+        android:insetBottom="0dp"
+        app:layout_constraintStart_toEndOf="@id/keyS"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/keyS"
+        app:layout_constraintBottom_toBottomOf="@id/keyS" />
 
-</GridLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
