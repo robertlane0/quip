@@ -2,6 +2,7 @@ package com.quip.client
 
 import android.annotation.SuppressLint
 import android.graphics.Color
+import android.graphics.PorterDuff
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -132,7 +133,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupKeyButton(button: View, bit: Long) {
-        val originalBackground = button.background
         button.setOnTouchListener { _, event ->
             if (!isConnected) {
                 if (event.action == MotionEvent.ACTION_DOWN) {
@@ -145,7 +145,7 @@ class MainActivity : AppCompatActivity() {
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    button.setBackgroundColor(Color.parseColor("#4CAF50"))
+                    button.background?.setColorFilter(Color.parseColor("#4CAF50"), android.graphics.PorterDuff.Mode.SRC_ATOP)
                     client.sendInputPacket(
                         digitalMask = bit,
                         mouseDx = 0,
@@ -159,7 +159,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    button.setBackground(originalBackground)
+                    button.background?.clearColorFilter()
                     client.sendInputPacket(
                         digitalMask = 0L,
                         mouseDx = 0,
