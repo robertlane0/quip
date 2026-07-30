@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:alignmentMode="alignMargins"
+    android:columnCount="3"
+    android:rowCount="2"
+    android:padding="20dp"
+    android:useDefaultMargins="true">
+
+    <!-- W -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/keyW"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_column="1"
+        android:layout_row="0"
+        android:layout_columnWeight="1"
+        android:layout_rowWeight="1"
+        android:tag="KEY_W"
+        android:text="W"
+        android:textSize="28sp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
+
+    <!-- A -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/keyA"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_column="0"
+        android:layout_row="1"
+        android:layout_columnWeight="1"
+        android:layout_rowWeight="1"
+        android:tag="KEY_A"
+        android:text="A"
+        android:textSize="28sp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
+
+    <!-- S -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/keyS"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_column="1"
+        android:layout_row="1"
+        android:layout_columnWeight="1"
+        android:layout_rowWeight="1"
+        android:tag="KEY_S"
+        android:text="S"
+        android:textSize="28sp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
+
+    <!-- D -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/keyD"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_column="2"
+        android:layout_row="1"
+        android:layout_columnWeight="1"
+        android:layout_rowWeight="1"
+        android:tag="KEY_D"
+        android:text="D"
+        android:textSize="28sp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
+
+</GridLayout>
