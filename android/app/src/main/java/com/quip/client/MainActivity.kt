@@ -1,6 +1,7 @@
 package com.quip.client
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -22,6 +23,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnConnect: Button
     private lateinit var tvStatus: TextView
 
+    private val prefs by lazy { getSharedPreferences("quip_prefs", Context.MODE_PRIVATE) }
+    private val KEY_LAST_IP = "last_connected_ip"
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +34,9 @@ class MainActivity : AppCompatActivity() {
         etHostIp = findViewById(R.id.ipAddressEditText)
         btnConnect = findViewById(R.id.connectButton)
         tvStatus = findViewById(R.id.statusText)
+
+        // Load last connected IP
+        etHostIp.setText(prefs.getString(KEY_LAST_IP, ""))
 
         val keyLayoutContainer = findViewById<FrameLayout>(R.id.keyLayoutContainer)
         val wasdLayout = LayoutInflater.from(this).inflate(R.layout.keylayout_wasd, keyLayoutContainer, false)
@@ -50,6 +57,8 @@ class MainActivity : AppCompatActivity() {
                 tvStatus.text = "Status: Connected to $ip:9876"
                 tvStatus.setTextColor(Color.GREEN)
                 Toast.makeText(this, "Connected to $ip:9876", Toast.LENGTH_SHORT).show()
+                // Save successful IP
+                prefs.edit().putString(KEY_LAST_IP, ip).apply()
             } else {
                 isConnected = false
                 tvStatus.text = "Status: Connection Failed"
