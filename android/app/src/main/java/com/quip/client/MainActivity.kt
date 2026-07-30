@@ -60,6 +60,7 @@ class MainActivity : AppCompatActivity() {
         setupKeyButton(wasdLayout.findViewById(R.id.keyA), QuipProtocol.BIT_A)
         setupKeyButton(wasdLayout.findViewById(R.id.keyS), QuipProtocol.BIT_S)
         setupKeyButton(wasdLayout.findViewById(R.id.keyD), QuipProtocol.BIT_D)
+        setupKeyButton(wasdLayout.findViewById(R.id.keySpace), QuipProtocol.BIT_SPACE)
 
         // Trackpad (page 1)
         val trackpad = findViewById<TrackpadView>(R.id.trackpad)
