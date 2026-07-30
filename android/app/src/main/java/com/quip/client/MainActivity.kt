@@ -3,9 +3,12 @@ package com.quip.client
 import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -18,17 +21,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etHostIp: EditText
     private lateinit var btnConnect: Button
     private lateinit var tvStatus: TextView
-    private lateinit var btnW: TextView
 
     @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        etHostIp = findViewById(R.id.etHostIp)
-        btnConnect = findViewById(R.id.btnConnect)
-        tvStatus = findViewById(R.id.tvStatus)
-        btnW = findViewById(R.id.btnW)
+        etHostIp = findViewById(R.id.ipAddressEditText)
+        btnConnect = findViewById(R.id.connectButton)
+        tvStatus = findViewById(R.id.statusText)
+
+        val keyLayoutContainer = findViewById<FrameLayout>(R.id.keyLayoutContainer)
+        val wasdLayout = LayoutInflater.from(this).inflate(R.layout.keylayout_wasd, keyLayoutContainer, false)
+        keyLayoutContainer.addView(wasdLayout)
+
+        val trackpad = findViewById<TrackpadView>(R.id.trackpad)
 
         btnConnect.setOnClickListener {
             val ip = etHostIp.text.toString().trim()
@@ -51,8 +58,81 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Giant W Touch Listener
-        btnW.setOnTouchListener { _, event ->
+        setupKeyButton(wasdLayout.findViewById(R.id.keyW), QuipProtocol.BIT_W)
+        setupKeyButton(wasdLayout.findViewById(R.id.keyA), QuipProtocol.BIT_A)
+        setupKeyButton(wasdLayout.findViewById(R.id.keyS), QuipProtocol.BIT_S)
+        setupKeyButton(wasdLayout.findViewById(R.id.keyD), QuipProtocol.BIT_D)
+
+        trackpad.listener = object : TrackpadView.Listener {
+            override fun onMouseMove(dx: Int, dy: Int) {
+                if (isConnected) {
+                    client.sendInputPacket(
+                        digitalMask = 0L,
+                        mouseDx = dx,
+                        mouseDy = dy,
+                        leftStickX = 0,
+                        leftStickY = 0,
+                        gyroYaw = 0,
+                        gyroPitch = 0,
+                        timestampUs = System.nanoTime() / 1000
+                    )
+                }
+            }
+
+            override fun onLeftClick() {
+                if (isConnected) {
+                    client.sendInputPacket(
+                        digitalMask = QuipProtocol.BIT_MOUSE_L,
+                        mouseDx = 0,
+                        mouseDy = 0,
+                        leftStickX = 0,
+                        leftStickY = 0,
+                        gyroYaw = 0,
+                        gyroPitch = 0,
+                        timestampUs = System.nanoTime() / 1000
+                    )
+                    client.sendInputPacket(
+                        digitalMask = 0L,
+                        mouseDx = 0,
+                        mouseDy = 0,
+                        leftStickX = 0,
+                        leftStickY = 0,
+                        gyroYaw = 0,
+                        gyroPitch = 0,
+                        timestampUs = System.nanoTime() / 1000
+                    )
+                }
+            }
+
+            override fun onRightClick() {
+                if (isConnected) {
+                    client.sendInputPacket(
+                        digitalMask = QuipProtocol.BIT_MOUSE_R,
+                        mouseDx = 0,
+                        mouseDy = 0,
+                        leftStickX = 0,
+                        leftStickY = 0,
+                        gyroYaw = 0,
+                        gyroPitch = 0,
+                        timestampUs = System.nanoTime() / 1000
+                    )
+                    client.sendInputPacket(
+                        digitalMask = 0L,
+                        mouseDx = 0,
+                        mouseDy = 0,
+                        leftStickX = 0,
+                        leftStickY = 0,
+                        gyroYaw = 0,
+                        gyroPitch = 0,
+                        timestampUs = System.nanoTime() / 1000
+                    )
+                }
+            }
+        }
+    }
+
+    private fun setupKeyButton(button: View, bit: Long) {
+        button.setOnTouchListener { _, event ->
             if (!isConnected) {
                 if (event.action == MotionEvent.ACTION_DOWN) {
                     Toast.makeText(this, "Please connect to a PC host first", Toast.LENGTH_SHORT).show()
@@ -64,9 +144,9 @@ class MainActivity : AppCompatActivity() {
 
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    btnW.setBackgroundColor(Color.parseColor("#4CAF50")) // Bright Green on press
+                    button.setBackgroundColor(Color.parseColor("#4CAF50"))
                     client.sendInputPacket(
-                        digitalMask = QuipProtocol.BIT_W,
+                        digitalMask = bit,
                         mouseDx = 0,
                         mouseDy = 0,
                         leftStickX = 0,
@@ -78,7 +158,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    btnW.setBackgroundColor(Color.parseColor("#222222")) // Dark Idle
+                    button.setBackgroundColor(Color.parseColor("#222222"))
                     client.sendInputPacket(
                         digitalMask = 0L,
                         mouseDx = 0,
