@@ -42,7 +42,8 @@
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
-            android:screenOrientation="landscape"
+            android:screenOrientation="fullSensor"
+            android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|keyboardHidden" />
     </application>
 
