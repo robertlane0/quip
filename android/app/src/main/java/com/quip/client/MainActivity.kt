@@ -132,6 +132,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupKeyButton(button: View, bit: Long) {
+        val originalBackground = button.background
         button.setOnTouchListener { _, event ->
             if (!isConnected) {
                 if (event.action == MotionEvent.ACTION_DOWN) {
@@ -158,7 +159,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    button.setBackgroundColor(Color.parseColor("#222222"))
+                    button.setBackground(originalBackground)
                     client.sendInputPacket(
                         digitalMask = 0L,
                         mouseDx = 0,
