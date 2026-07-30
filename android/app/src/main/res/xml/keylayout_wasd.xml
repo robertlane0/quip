@@ -8,13 +8,17 @@
     Kotlin changes are needed to add a new control scheme, just a new file
     here plus one line registering it in MainActivity.LAYOUTS.
 
-    <key-layout name="..." rows="R" columns="C">
+    <key-layout name="..." rows="R" columns="C" [rowWeights="w0,w1,..."]>
         <key label="Display text"
              bit="BIT_CONSTANT_NAME"
              row="r" col="c"
              [rowSpan="1"] [colSpan="1"]
              [accent="false"] />
     </key-layout>
+
+    rowWeights (optional): comma-separated relative height per row, like LinearLayout's
+    layout_weight — e.g. "3,3,2,2" makes rows 0-1 taller than rows 2-3. Omit for equal
+    row heights.
 -->
 <key-layout
     name="WASD"

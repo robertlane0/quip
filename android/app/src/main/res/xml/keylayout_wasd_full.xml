@@ -3,7 +3,8 @@
 <key-layout
     name="WASD + Mods"
     rows="4"
-    columns="3">
+    columns="3"
+    rowWeights="3,3,2,2">
 
     <key label="W" bit="BIT_W" row="0" col="1" />
     <key label="A" bit="BIT_A" row="1" col="0" />

@@ -34,9 +34,10 @@ class KeyboardPanel(private val context: Context, private val engine: InputEngin
         for (keyDef in layout.keys) {
             val bit = QuipProtocol.bitByName(keyDef.bitName)
             val keyView = createKeyView(keyDef, bit)
+            val rowWeight = layout.rowWeights.getOrElse(keyDef.row) { 1f }
 
             val params = GridLayout.LayoutParams(
-                GridLayout.spec(keyDef.row, keyDef.rowSpan, GridLayout.FILL, 1f),
+                GridLayout.spec(keyDef.row, keyDef.rowSpan, GridLayout.FILL, rowWeight),
                 GridLayout.spec(keyDef.col, keyDef.colSpan, GridLayout.FILL, 1f)
             )
             params.setMargins(margin, margin, margin, margin)

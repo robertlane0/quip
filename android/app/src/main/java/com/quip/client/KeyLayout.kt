@@ -21,11 +21,18 @@ data class KeyDef(
     val accent: Boolean = false
 )
 
-/** A named grid of [KeyDef]s, parsed from a res/xml/keylayout_*.xml resource. */
+/**
+ * A named grid of [KeyDef]s, parsed from a res/xml/keylayout_*.xml resource.
+ *
+ * [rowWeights] controls each row's share of the available vertical space (same idea as
+ * LinearLayout's layout_weight) — a row with weight 2 renders twice as tall as a row
+ * with weight 1. Defaults to equal weight (1f) per row when not specified in XML.
+ */
 data class KeyLayout(
     val name: String,
     val rows: Int,
     val columns: Int,
+    val rowWeights: List<Float>,
     val keys: List<KeyDef>
 )
 
@@ -41,6 +48,7 @@ object KeyLayoutParser {
         var name = ""
         var rows = 1
         var columns = 1
+        var rowWeightsAttr: String? = null
         val keys = mutableListOf<KeyDef>()
 
         try {
@@ -52,6 +60,7 @@ object KeyLayoutParser {
                             name = parser.getAttributeValue(null, "name") ?: "Layout"
                             rows = parser.getAttributeIntValue(null, "rows", 1)
                             columns = parser.getAttributeIntValue(null, "columns", 1)
+                            rowWeightsAttr = parser.getAttributeValue(null, "rowWeights")
                         }
                         "key" -> {
                             val bitName = parser.getAttributeValue(null, "bit")
@@ -76,6 +85,12 @@ object KeyLayoutParser {
             parser.close()
         }
 
-        return KeyLayout(name, rows, columns, keys)
+        val rowWeights = rowWeightsAttr
+            ?.split(",")
+            ?.map { it.trim().toFloatOrNull() ?: 1f }
+            ?.let { parsed -> List(rows) { i -> parsed.getOrElse(i) { 1f } } }
+            ?: List(rows) { 1f }
+
+        return KeyLayout(name, rows, columns, rowWeights, keys)
     }
 }

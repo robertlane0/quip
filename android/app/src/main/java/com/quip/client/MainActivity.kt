@@ -1,15 +1,12 @@
 package com.quip.client
 
-import android.graphics.Color
+import android.content.Intent
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.EditText
 import android.widget.FrameLayout
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -17,36 +14,22 @@ import androidx.core.content.ContextCompat
 
 class MainActivity : AppCompatActivity() {
 
-    /**
-     * Registry of selectable key layouts. Each is just an XML resource — to ship a new
-     * control scheme, add a res/xml/keylayout_*.xml file (see keylayout_wasd.xml for the
-     * schema) and add one entry here.
-     */
-    private val layoutOptions: List<Pair<String, Int>> = listOf(
-        "WASD" to R.xml.keylayout_wasd,
-        "WASD + Mods" to R.xml.keylayout_wasd_full
-    )
-
-    private val nativeClient = NativeQuipClient()
-    private val transport = TransportManager(nativeClient)
-    private val engine = InputEngine()
     private lateinit var keyboardPanel: KeyboardPanel
-
-    private lateinit var etHostIp: EditText
-    private lateinit var spinnerLayout: Spinner
-    private lateinit var btnConnect: android.widget.Button
-    private lateinit var tvStatus: TextView
     private lateinit var keyboardContainer: FrameLayout
     private lateinit var trackpad: TrackpadView
+    private lateinit var statusDot: View
+    private lateinit var tvStatus: TextView
 
-    private var isConnected = false
+    // Tracks which layout is currently built into keyboardContainer so we only rebuild
+    // it when the selection actually changed (e.g. after returning from Settings).
+    private var renderedLayoutIndex: Int = -1
 
     // Drives the periodic transmission of the current key/mouse state at ~60Hz.
     private val sendHandler = Handler(Looper.getMainLooper())
     private val sendIntervalMs = 16L
     private val sendLoop = object : Runnable {
         override fun run() {
-            transport.sendInputFrame(engine)
+            AppState.transport.sendInputFrame(AppState.engine)
             sendHandler.postDelayed(this, sendIntervalMs)
         }
     }
@@ -54,25 +37,28 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        hideSystemBars()
 
-        etHostIp = findViewById(R.id.etHostIp)
-        spinnerLayout = findViewById(R.id.spinnerLayout)
-        btnConnect = findViewById(R.id.btnConnect)
-        tvStatus = findViewById(R.id.tvStatus)
         keyboardContainer = findViewById(R.id.keyboardContainer)
         trackpad = findViewById(R.id.trackpad)
+        statusDot = findViewById(R.id.statusDot)
+        tvStatus = findViewById(R.id.tvStatus)
+        val btnSettings: View = findViewById(R.id.btnSettings)
 
-        keyboardPanel = KeyboardPanel(this, engine)
+        keyboardPanel = KeyboardPanel(this, AppState.engine)
 
-        setupLayoutSpinner()
-        setupConnectButton()
+        btnSettings.setOnClickListener {
+            startActivity(Intent(this, SettingsActivity::class.java))
+        }
+
         setupTrackpad()
-
-        renderKeyLayout(layoutOptions.first().second)
     }
 
     override fun onResume() {
         super.onResume()
+        hideSystemBars()
+        refreshLayoutIfNeeded()
+        refreshStatus()
         sendHandler.post(sendLoop)
     }
 
@@ -81,106 +67,77 @@ class MainActivity : AppCompatActivity() {
         sendHandler.removeCallbacks(sendLoop)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        sendHandler.removeCallbacks(sendLoop)
-        transport.disconnect()
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideSystemBars()
+    }
+
+    /** Hides the status/nav bars so the keyboard and trackpad get the full screen. */
+    @Suppress("DEPRECATION")
+    private fun hideSystemBars() {
+        window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                or View.SYSTEM_UI_FLAG_FULLSCREEN
+            )
     }
 
     // ---- Setup ----------------------------------------------------------------------
 
-    private fun setupLayoutSpinner() {
-        val adapter = object : ArrayAdapter<String>(
-            this,
-            android.R.layout.simple_spinner_item,
-            layoutOptions.map { it.first }
-        ) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getView(position, convertView, parent) as TextView
-                view.setTextColor(Color.WHITE)
-                view.setPadding(24, 16, 24, 16)
-                return view
-            }
-
-            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getDropDownView(position, convertView, parent) as TextView
-                view.setTextColor(Color.WHITE)
-                view.setBackgroundColor(ContextCompat.getColor(context, R.color.quip_bg_elevated))
-                view.setPadding(24, 16, 24, 16)
-                return view
-            }
-        }
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerLayout.adapter = adapter
-
-        spinnerLayout.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                renderKeyLayout(layoutOptions[position].second)
-            }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-        })
-    }
-
-    private fun setupConnectButton() {
-        btnConnect.setOnClickListener {
-            val ip = etHostIp.text.toString().trim()
-            if (ip.isEmpty()) {
-                Toast.makeText(this, "Please enter a host IP address", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            val ok = transport.connectWifi(ip, 9876)
-            isConnected = ok
-            if (ok) {
-                tvStatus.text = "Status: Connected to $ip:9876"
-                tvStatus.setTextColor(ContextCompat.getColor(this, R.color.quip_status_ok))
-                Toast.makeText(this, "Connected to $ip:9876", Toast.LENGTH_SHORT).show()
-            } else {
-                tvStatus.text = "Status: Connection Failed"
-                tvStatus.setTextColor(ContextCompat.getColor(this, R.color.quip_status_bad))
-                Toast.makeText(this, "Failed to initialize client for $ip", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
     private fun setupTrackpad() {
         trackpad.onMove = { dx, dy ->
-            engine.addTouchDelta(dx, dy)
+            AppState.engine.addTouchDelta(dx, dy)
         }
         trackpad.onLeftClick = {
-            if (!isConnected) {
-                Toast.makeText(this, "Please connect to a PC host first", Toast.LENGTH_SHORT).show()
+            if (!AppState.isConnected) {
+                Toast.makeText(this, "Connect to a PC host in Settings first", Toast.LENGTH_SHORT).show()
             } else {
                 pulseMouseButton(QuipProtocol.BIT_MOUSE_L)
             }
         }
         trackpad.onRightClick = {
-            if (!isConnected) {
-                Toast.makeText(this, "Please connect to a PC host first", Toast.LENGTH_SHORT).show()
+            if (!AppState.isConnected) {
+                Toast.makeText(this, "Connect to a PC host in Settings first", Toast.LENGTH_SHORT).show()
             } else {
                 pulseMouseButton(QuipProtocol.BIT_MOUSE_R)
             }
         }
     }
 
-    // ---- Layout rendering -------------------------------------------------------------
+    // ---- Layout / status rendering -----------------------------------------------------
 
-    private fun renderKeyLayout(xmlResId: Int) {
-        // Releasing any held keys from the previous layout before swapping it out.
-        engine.currentDigitalMask = 0L
+    private fun refreshLayoutIfNeeded() {
+        if (renderedLayoutIndex == AppState.selectedLayoutIndex) return
+        renderedLayoutIndex = AppState.selectedLayoutIndex
 
-        val layout = KeyLayoutParser.parse(this, xmlResId)
+        // Release any keys that were held from the previous layout before swapping it out.
+        AppState.engine.currentDigitalMask = 0L
+
+        val layout = KeyLayoutParser.parse(this, AppState.selectedLayoutRes)
         keyboardContainer.removeAllViews()
         keyboardContainer.addView(keyboardPanel.build(layout))
+    }
+
+    private fun refreshStatus() {
+        val colorRes = if (AppState.isConnected) R.color.quip_status_ok else R.color.quip_status_bad
+        statusDot.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, colorRes))
+        tvStatus.text = if (AppState.isConnected) {
+            "Connected \u00b7 ${AppState.hostIp}"
+        } else {
+            "Not connected"
+        }
     }
 
     // ---- Mouse click pulses ------------------------------------------------------------
 
     /** Sets [bit] for one short frame window then clears it, i.e. a click "down + up". */
     private fun pulseMouseButton(bit: Long) {
-        engine.currentDigitalMask = engine.currentDigitalMask or bit
+        AppState.engine.currentDigitalMask = AppState.engine.currentDigitalMask or bit
         sendHandler.postDelayed({
-            engine.currentDigitalMask = engine.currentDigitalMask and bit.inv()
+            AppState.engine.currentDigitalMask = AppState.engine.currentDigitalMask and bit.inv()
         }, 60L)
     }
 }

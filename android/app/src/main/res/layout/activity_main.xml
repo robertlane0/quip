@@ -5,64 +5,49 @@
     android:orientation="vertical"
     android:background="@color/quip_bg">
 
-    <!-- Top Connection Bar -->
+    <!-- Slim status bar: connection indicator + settings entry point. Everything else
+         (host IP, connect button, layout picker) now lives in SettingsActivity so the
+         keyboard and trackpad below get as much vertical room as possible. -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="10dp"
+        android:paddingStart="14dp"
+        android:paddingEnd="4dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
         android:background="@color/quip_bg_elevated">
 
-        <EditText
-            android:id="@+id/etHostIp"
+        <View
+            android:id="@+id/statusDot"
+            android:layout_width="9dp"
+            android:layout_height="9dp"
+            android:background="@drawable/bg_status_dot" />
+
+        <TextView
+            android:id="@+id/tvStatus"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Host IP (e.g. 192.168.1.100)"
-            android:textColorHint="@color/quip_text_secondary"
+            android:layout_marginStart="8dp"
+            android:text="Not connected"
+            android:textColor="@color/quip_text_secondary"
+            android:textSize="12sp" />
+
+        <TextView
+            android:id="@+id/btnSettings"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:text="\u2699"
+            android:textSize="18sp"
             android:textColor="@color/quip_text_primary"
-            android:inputType="textUri"
-            android:singleLine="true"
-            android:textSize="15sp"
-            android:background="@color/quip_bg"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="9dp"
-            android:paddingBottom="9dp" />
+            android:gravity="center"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
-        <Spinner
-            android:id="@+id/spinnerLayout"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:minWidth="130dp"
-            android:background="@color/quip_bg" />
-
-        <Button
-            android:id="@+id/btnConnect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Connect"
-            android:textColor="#FFFFFF"
-            android:backgroundTint="@color/quip_accent"
-            android:layout_marginStart="8dp"
-            android:paddingStart="18dp"
-            android:paddingEnd="18dp"
-            android:minHeight="0dp" />
     </LinearLayout>
-
-    <!-- Status Text -->
-    <TextView
-        android:id="@+id/tvStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Status: Disconnected"
-        android:textColor="@color/quip_status_warn"
-        android:gravity="center"
-        android:padding="6dp"
-        android:textSize="13sp"
-        android:background="@color/quip_bg_bar" />
 
     <!-- Keyboard | Trackpad -->
     <LinearLayout
@@ -83,17 +68,21 @@
                 android:layout_height="wrap_content"
                 android:text="KEYBOARD"
                 android:textColor="@color/quip_text_hint"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:letterSpacing="0.15"
                 android:gravity="center"
-                android:padding="10dp" />
+                android:paddingTop="4dp"
+                android:paddingBottom="2dp" />
 
             <FrameLayout
                 android:id="@+id/keyboardContainer"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:padding="20dp" />
+                android:paddingStart="0dp"
+                android:paddingEnd="8dp"
+                android:paddingTop="0dp"
+                android:paddingBottom="0dp" />
 
         </LinearLayout>
 
@@ -115,17 +104,21 @@
                 android:layout_height="wrap_content"
                 android:text="TRACKPAD"
                 android:textColor="@color/quip_text_hint"
-                android:textSize="12sp"
+                android:textSize="10sp"
                 android:letterSpacing="0.15"
                 android:gravity="center"
-                android:padding="10dp" />
+                android:paddingTop="4dp"
+                android:paddingBottom="2dp" />
 
             <com.quip.client.TrackpadView
                 android:id="@+id/trackpad"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
-                android:layout_margin="20dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="0dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginBottom="0dp"
                 android:background="@drawable/bg_trackpad" />
 
         </LinearLayout>
