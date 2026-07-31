@@ -16,11 +16,19 @@
             region math needed. Drag = move, tap = left click, double-tap = right click.
 
         <joystick size="dp" gravity="v|h" marginStart/End/Top/Bottom="dp"
-                  bitUp/Down/Left/Right="BIT_CONSTANT_NAME" />
+                  bitUp/Down/Left/Right="BIT_CONSTANT_NAME"
+                  [bitSprint="BIT_CONSTANT_NAME"] [floatRange="0.0-1.0"] />
             A virtual stick that drives up to 4 independent digital bits — diagonals
             naturally combine two bits, the same as holding two real keys would. gravity
             accepts any of: top, bottom, start, end, left, right, center,
             center_horizontal, center_vertical, combined with "|".
+            bitSprint (optional): fired as a ~1.5s bounded pulse when the knob is pushed
+            all the way to the track's edge (e.g. games where a brief Shift tap engages
+            sprint) — cancelled early if released or pulled back off the edge sooner.
+            floatRange (optional): lets the joystick "float" to wherever the player first
+            taps, rather than sitting at one fixed spot. Value is the fraction of the
+            screen's width/height (from the joystick's anchor corner) it's allowed to
+            relocate within; omit for a classic fixed-position joystick.
 
         <button label="..." bit="BIT_CONSTANT_NAME" size="dp" gravity="v|h"
                 marginStart/End/Top/Bottom="dp" />
@@ -34,35 +42,37 @@
     <trackpad fullscreen="true" />
 
     <joystick
-        size="200dp"
+        size="250dp"
         gravity="bottom|start"
         marginStart="28dp"
         marginBottom="28dp"
         bitUp="BIT_W"
         bitDown="BIT_S"
         bitLeft="BIT_A"
-        bitRight="BIT_D" />
+        bitRight="BIT_D"
+        bitSprint="BIT_SHIFT"
+        floatRange="0.5" />
 
     <button
         label="Use (E key)"
         bit="BIT_E"
-        size="100dp"
+        size="125dp"
         gravity="bottom|end"
-        marginEnd="44dp"
-        marginBottom="212dp" />
+        marginEnd="40dp"
+        marginBottom="199dp" />
 
     <button
         label="Attack/Destroy (Left Click)"
         bit="BIT_MOUSE_L"
-        size="124dp"
+        size="155dp"
         gravity="bottom|end"
-        marginEnd="220dp"
+        marginEnd="199dp"
         marginBottom="24dp" />
 
     <button
         label="Jump (space bar)"
         bit="BIT_SPACE"
-        size="124dp"
+        size="155dp"
         gravity="bottom|end"
         marginEnd="24dp"
         marginBottom="24dp" />

@@ -45,7 +45,9 @@ object ControlSchemeParser {
                                     bitUpName = parser.getAttributeValue(null, "bitUp") ?: "BIT_W",
                                     bitDownName = parser.getAttributeValue(null, "bitDown") ?: "BIT_S",
                                     bitLeftName = parser.getAttributeValue(null, "bitLeft") ?: "BIT_A",
-                                    bitRightName = parser.getAttributeValue(null, "bitRight") ?: "BIT_D"
+                                    bitRightName = parser.getAttributeValue(null, "bitRight") ?: "BIT_D",
+                                    bitSprintName = parser.getAttributeValue(null, "bitSprint"),
+                                    floatRangeFraction = parser.getAttributeValue(null, "floatRange")?.toFloatOrNull()
                                 )
                             )
                         }

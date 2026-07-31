@@ -32,7 +32,13 @@ sealed class ControlElement {
         val bitUpName: String,
         val bitDownName: String,
         val bitLeftName: String,
-        val bitRightName: String
+        val bitRightName: String,
+        /** Optional: bit fired as a bounded pulse when pushed fully to the edge (e.g. sprint). */
+        val bitSprintName: String? = null,
+        /** Optional: fraction of the screen's width/height the joystick can "float" within
+         *  when tapped, relative to its own anchor corner. Null = fixed position (bounds
+         *  equal the track's own size, matching [sizeDp] exactly). */
+        val floatRangeFraction: Float? = null
     ) : ControlElement()
 
     /** A circular, freely-positioned press-and-hold button bound to one digital bit. */

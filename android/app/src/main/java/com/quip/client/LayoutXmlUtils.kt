@@ -5,7 +5,7 @@ import androidx.annotation.XmlRes
 import org.xmlpull.v1.XmlPullParser
 
 /**
- * Reads just the root tag name of a res/xml/.xml resource, so callers can decide which
+ * Reads just the root tag name of a res/xml/*.xml resource, so callers can decide which
  * parser to hand it to (e.g. "key-layout" -> [KeyLayoutParser], "control-scheme" ->
  * [ControlSchemeParser]) without needing a separate registry of which is which.
  */

@@ -64,19 +64,34 @@ class ControlSchemeBuilder(
     }
 
     private fun buildJoystick(spec: ControlElement.JoystickElement): JoystickView {
-        val sizePx = (spec.sizeDp * density).toInt()
+        val trackSizePx = (spec.sizeDp * density).toInt()
+
+        // With no floatRange, the View's bounds equal the track exactly (fixed-position
+        // joystick). With floatRange set, the bounds — the "floating range" the joystick
+        // can relocate itself within on tap — are a fraction of the physical screen size,
+        // always at least big enough to contain the track itself.
+        val metrics = context.resources.displayMetrics
+        val boundsWidthPx = spec.floatRangeFraction
+            ?.let { (metrics.widthPixels * it).toInt().coerceAtLeast(trackSizePx) }
+            ?: trackSizePx
+        val boundsHeightPx = spec.floatRangeFraction
+            ?.let { (metrics.heightPixels * it).toInt().coerceAtLeast(trackSizePx) }
+            ?: trackSizePx
+
         return JoystickView(context).apply {
+            trackDiameterPx = trackSizePx
             bitUp = QuipProtocol.bitByName(spec.bitUpName)
             bitDown = QuipProtocol.bitByName(spec.bitDownName)
             bitLeft = QuipProtocol.bitByName(spec.bitLeftName)
             bitRight = QuipProtocol.bitByName(spec.bitRightName)
+            bitSprint = spec.bitSprintName?.let { QuipProtocol.bitByName(it) } ?: 0L
 
-            val ownedBits = bitUp or bitDown or bitLeft or bitRight
+            val ownedBits = bitUp or bitDown or bitLeft or bitRight or bitSprint
             onDirectionBitsChanged = { activeBits ->
                 engine.currentDigitalMask = (engine.currentDigitalMask and ownedBits.inv()) or activeBits
             }
 
-            layoutParams = marginedLayoutParams(sizePx, sizePx, spec.gravity, spec.marginStartDp, spec.marginEndDp, spec.marginTopDp, spec.marginBottomDp)
+            layoutParams = marginedLayoutParams(boundsWidthPx, boundsHeightPx, spec.gravity, spec.marginStartDp, spec.marginEndDp, spec.marginTopDp, spec.marginBottomDp)
         }
     }
 
